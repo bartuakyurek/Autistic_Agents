@@ -1,9 +1,9 @@
 
 import numpy as np
+from typing import Tuple, List
 from mesa.space import MultiGrid
 
 from io_handler import load_city, get_image_width_height
-from typing import Tuple, List
 
 class City(MultiGrid):
     def __init__(self, 

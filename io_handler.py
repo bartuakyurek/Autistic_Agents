@@ -2,6 +2,7 @@
 from PIL import Image
 import numpy as np
 
+RED = np.array([255, 0, 0])
 BLACK =  np.array([0, 0, 0])
 GREEN = np.array([0, 255, 0]) 
 ORANGE = np.array([255, 153, 51])

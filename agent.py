@@ -3,7 +3,7 @@
 from mesa import Agent
 from mesa.experimental.cell_space import CellAgent, FixedAgent
 
-from io_handler import BLACK, ORANGE, GREEN
+from io_handler import BLACK, ORANGE, GREEN, RED
 
 class BuildingAgent(FixedAgent):
     color = GREEN
@@ -22,6 +22,7 @@ class BusStopAgent(FixedAgent):
 
 
 class EmployeeAgent(Agent):
+    color = RED
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
 

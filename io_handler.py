@@ -30,6 +30,11 @@ def load_city(image_path, road_color=BLACK, station_color=ORANGE, building_color
 
     return road_pixels, station_pixels, building_pixels
 
+def get_image_width_height(image_path):
+    img = Image.open(image_path).convert("RGB")  # Ensure RGB format
+    data = np.array(img)
+    return data.shape[0], data.shape[1]
+
 
 if __name__ == '__main__':
     image_path = "./assets/simple_10_10.png"  # replace with your image path

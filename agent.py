@@ -3,26 +3,31 @@
 from mesa import Agent
 from mesa.experimental.cell_space import CellAgent, FixedAgent
 
-from io_handler import BLACK, ORANGE, GREEN, RED
+
+from colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR, AGENT_COLOR, BUS_COLOR
 
 class BuildingAgent(FixedAgent):
-    color = GREEN
+    color = BUILDING_COLOR
     def __init__(self, model):
         super().__init__(model)
 
 class RoadAgent(FixedAgent):
-    color = BLACK
+    color = ROAD_COLOR
     def __init__(self, model):
         super().__init__(model)
 
 class BusStopAgent(FixedAgent):
-    color = ORANGE
+    color = BUS_STOP_COLOR
     def __init__(self, model):
         super().__init__(model)
 
+class BusAgent(Agent):
+    color = BUS_COLOR
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(model, *args, **kwargs)
 
 class EmployeeAgent(Agent):
-    color = RED
+    color = AGENT_COLOR
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
 
@@ -30,3 +35,4 @@ class EmployeeAgent(Agent):
         self.wealth = 0 
         self.income = None
         self.needs = None
+

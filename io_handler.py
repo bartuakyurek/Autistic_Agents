@@ -2,10 +2,7 @@
 from PIL import Image
 import numpy as np
 
-RED = np.array([255, 0, 0])
-BLACK =  np.array([0, 0, 0])
-GREEN = np.array([0, 255, 0]) 
-ORANGE = np.array([255, 153, 51])
+from colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR
 color_tolerance = 20  # allowed difference per channel
 
 def load_entity_pixels(image_path, target_color)->np.ndarray:
@@ -22,7 +19,7 @@ def load_entity_pixels(image_path, target_color)->np.ndarray:
     return entity_pixels
 
 
-def load_city(image_path, road_color=BLACK, station_color=ORANGE, building_color=GREEN):
+def load_city(image_path, road_color=ROAD_COLOR, station_color=BUS_STOP_COLOR, building_color=BUILDING_COLOR):
     # Black pixels in the image are treated as roads
     # Return the coordinates available to vehicles
     road_pixels = load_entity_pixels(image_path, road_color)

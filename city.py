@@ -63,23 +63,23 @@ if __name__ == '__main__':
         else:
             ag = None
         if isinstance(ag, RoadAgent): 
-            agent_count = 10
+            content_id = 10
         elif isinstance(ag, BuildingAgent):
-            agent_count = 5
+            content_id = 5
         elif isinstance(ag, BusStopAgent):
-            agent_count = 20
+            content_id = 20
         elif isinstance(ag, EmployeeAgent):
-            agent_count = 1
+            content_id = 1
         elif isinstance(ag, BusAgent):
-            agent_count = 50
+            content_id = 50
         else:
-            agent_count = 0
+            content_id = 0
 
-        agent_counts[x][y] = agent_count
+        agent_counts[x][y] = content_id
 
     # Plot using seaborn, with a visual size of 5x5
     g = sns.heatmap(agent_counts, cmap="viridis", annot=True, cbar=False, square=True)
     g.figure.set_size_inches(5, 5)
-    g.set(title="number of agents on each cell of the grid");
+    g.set(title="each number represents content id");
 
     plt.show()

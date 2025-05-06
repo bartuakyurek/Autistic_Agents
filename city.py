@@ -53,6 +53,7 @@ class City(Model):
 
 
 def visualize_city(city : Model):
+    # WARNING: at this point it colors only one entities but there could be more than one (e.g. Agent sitting on a Road) 
     content_id_grid = np.zeros((city.grid.width, city.grid.height))
     for cell_content, (x, y) in city.grid.coord_iter():
       
@@ -60,18 +61,18 @@ def visualize_city(city : Model):
             ag = cell_content[0]
         else:
             ag = None
-        if isinstance(ag, RoadAgent): 
-            content_id = 10
-        elif isinstance(ag, BuildingAgent):
+        if isinstance(ag, EmployeeAgent): 
             content_id = 5
+        elif isinstance(ag, BuildingAgent):
+            content_id = 10
         elif isinstance(ag, BusStopAgent):
             content_id = 20
-        elif isinstance(ag, EmployeeAgent):
-            content_id = 1
+        elif isinstance(ag, RoadAgent):
+            content_id = 30
         elif isinstance(ag, BusAgent):
             content_id = 50
         else:
-            content_id = 0
+            content_id = 0 # Empty
 
         content_id_grid[x][y] = content_id
 

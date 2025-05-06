@@ -53,7 +53,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     image_path = "./assets/simple_10_10.png"  
-    model = City(image_path=image_path, verbose=True)
+    model = City(image_path=image_path)
 
     agent_counts = np.zeros((model.grid.width, model.grid.height))
     for cell_content, (x, y) in model.grid.coord_iter():

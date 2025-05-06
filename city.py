@@ -4,6 +4,9 @@ from typing import Tuple, List
 from mesa import Model
 from mesa.space import MultiGrid
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from agent import *
 from io_handler import load_city, get_image_width_height
 
@@ -48,15 +51,10 @@ class City(Model):
                     raise ValueError("A cell cannot be occupied with multiple non-agent entities")
                 self.__busy_cells.append(location)
 
-if __name__ == '__main__':
-    import seaborn as sns
-    import matplotlib.pyplot as plt
 
-    image_path = "./assets/simple_10_10.png"  
-    model = City(image_path=image_path)
-
-    agent_counts = np.zeros((model.grid.width, model.grid.height))
-    for cell_content, (x, y) in model.grid.coord_iter():
+def visualize_city(city : Model):
+    content_id_grid = np.zeros((city.grid.width, city.grid.height))
+    for cell_content, (x, y) in city.grid.coord_iter():
       
         if len(cell_content):
             ag = cell_content[0]
@@ -75,11 +73,19 @@ if __name__ == '__main__':
         else:
             content_id = 0
 
-        agent_counts[x][y] = content_id
+        content_id_grid[x][y] = content_id
 
     # Plot using seaborn, with a visual size of 5x5
-    g = sns.heatmap(agent_counts, cmap="viridis", annot=True, cbar=False, square=True)
+    g = sns.heatmap(content_id_grid, cmap="viridis", annot=True, cbar=False, square=True)
     g.figure.set_size_inches(5, 5)
-    g.set(title="each number represents content id");
+    g.set(title="each number represents content id")
 
     plt.show()
+
+if __name__ == '__main__':
+    
+    image_path = "./assets/simple_10_10.png"  
+    city = City(image_path=image_path)
+
+    visualize_city(city)
+    

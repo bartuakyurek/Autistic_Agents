@@ -13,7 +13,7 @@ class City(Model):
     # The model can be visualized as a list containing all the agents. 
     # The model creates, holds and manages all the agent objects, specifically in a dictionary. 
     # The model activates agents in discrete time steps.
-    def __init__(self, image_path, verbose, *args, seed = None, rng = None, **kwargs):
+    def __init__(self, image_path, *args, seed = None, rng = None, **kwargs):
         super().__init__(*args, seed=seed, rng=rng, **kwargs)
 
         city_entities_tuple = load_city(image_path)

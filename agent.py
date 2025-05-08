@@ -18,7 +18,7 @@ class EmployeeAgent(Agent):
         self.home = None
         self.workplace = None
 
-        self.money = 0 
+        self.wealth = 0 
         self.energy = 0
         self.social_energy = 0
 

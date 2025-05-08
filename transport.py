@@ -16,3 +16,8 @@ class Bus:
 
     def move_to_next(self):
         pass
+
+    def get_remaining_stations(self):
+        pass
+        # return a sorted list of remaining stations
+        # so that agents will be informed what stations there will be 

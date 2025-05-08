@@ -1,6 +1,6 @@
 
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple
 from mesa import Model
 from mesa.space import MultiGrid
 

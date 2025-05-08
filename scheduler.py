@@ -1,5 +1,6 @@
 
 
+
 class BusScheduler:
     def __init__(self):
         self.busses  = []
@@ -13,9 +14,10 @@ class BusScheduler:
 
 
 
-bus_schedule = {
+bus_schedule = { # (!) Assume stations are given in order 
 
-    "1" : ["ODTU", "Kizilay", "Yuzyil"]
+    "1" : ["ODTU", "Kizilay", "Yuzyil"],
+    "2" : ["Kizilay", "Yüzyil"]
 
 }
 

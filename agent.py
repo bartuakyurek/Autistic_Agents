@@ -8,6 +8,38 @@ from colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR, AGENT_COLOR, BUS_
 
 
 #######################################################################################################################
+# Employee Agents 
+#######################################################################################################################
+class EmployeeAgent(Agent):
+    color = AGENT_COLOR
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(model, *args, **kwargs)
+
+        self.home = None
+        self.workplace = None
+
+        self.money = 0 
+        self.energy = 0
+        self.social_energy = 0
+
+
+    def agent_portrayal(agent):
+        portrayal = {"Shape": "circle", "r": 0.5}
+
+        if agent.state == "walking":
+            portrayal["Color"] = "blue"
+        elif agent.state == "working":
+            portrayal["Color"] = "green"
+        elif agent.state == "resting":
+            portrayal["Color"] = "orange"
+
+        portrayal["Layer"] = 1
+        portrayal["text"] = f"{agent.energy}"
+        portrayal["text_color"] = "white"
+
+        return portrayal
+    
+#######################################################################################################################
 # Static Agents 
 #######################################################################################################################
 # These aren't autonomous agents but entities that
@@ -52,24 +84,6 @@ class BusAgent(Agent):
     def step(self):
         if self.current_index >= len(self.route):
             self.remove() # Bus agent is removed at the end of its route 
-
-#######################################################################################################################
-# Employee Agents 
-#######################################################################################################################
-class EmployeeAgent(Agent):
-    color = AGENT_COLOR
-    def __init__(self, model, *args, **kwargs):
-        super().__init__(model, *args, **kwargs)
-
-        self.home = None
-        self.wealth = 0 
-        self.income = None
-        self.needs = None
-
-class AutisticEmployee(EmployeeAgent):
-    pass
-class AllisticEmployee(EmployeeAgent):
-    pass
 
 
 #######################################################################################################################

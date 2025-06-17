@@ -138,7 +138,6 @@ class Agent:
         self.apply_action("work", [delta[0], delta[1](), delta[2]])
        
     def rest(self):
-        self.apply_action("rest", ACTION_EFFECTS["rest"])
 
     def apply_action(self, action, effect):
         logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')

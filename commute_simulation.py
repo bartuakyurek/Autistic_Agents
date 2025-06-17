@@ -12,7 +12,10 @@ ENERGY = 0
 SOCIAL_ENERGY = 1
 WEALTH = 2
 
-_TIME = 0
+# For logging
+_TIME = 0 
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', level=logging.INFO)
 
 # Action effect matrix (Need-Satisfaction Matrix)
 ACTION_EFFECTS = {
@@ -42,7 +45,7 @@ class Agent:
             self.in_recovery = True
             self.recovery_timer = 5
 
-            logging.info(f'[{_TIME}][BURNOUT] Agent {self.name} has social burnout.')
+            logger.info(f'[{_TIME}][BURNOUT] Agent {self.name} has social burnout.')
             self.burnout_state = "social"
             return True
         
@@ -50,7 +53,7 @@ class Agent:
             self.in_recovery = True
             self.recovery_timer = 5
 
-            logging.info(f'[{_TIME}][BURNOUT] Agent {self.name} has energy burnout.')
+            logger.info(f'[{_TIME}][BURNOUT] Agent {self.name} has energy burnout.')
             self.burnout_state = "energy"
             return True
 
@@ -112,7 +115,7 @@ class Agent:
         self.apply_action("rest", ACTION_EFFECTS["rest"])
 
     def apply_action(self, action, effect):
-        logging.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')
+        logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')
 
         assert len(effect) == len(self.needs), f"Please provide an array of effects with the same length of needs. Provided effect has length {len(effect)}, expected length {len(self.needs)}."
         for i in range(len(effect)):

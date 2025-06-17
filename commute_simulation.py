@@ -3,9 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 
-# Constants
-MAX_TICKS = 500
-DAY_LENGTH = 100
+# Read config.yaml for simulation parameters
+import yaml
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+DAY_LENGTH = config['simulation']['day_length']
+MAX_TICKS = config['simulation']['max_ticks']
+NUM_AGENTS = config['simulation']['num_agents']
 
 # Need indices: [Energy, Social, Wealth]
 ENERGY = 0
@@ -20,24 +25,24 @@ logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', l
 # Action effect matrix (Need-Satisfaction Matrix)
 ACTION_EFFECTS = {
     "work": [-2, lambda: -1 if random.random() < 0.5 else 0, 5],
-    "rest": [3, 0, 0],
-    "socialize": [0, 3, 0],
-    "walk": [lambda length: -length * 0.1, 0, 0], # Assumption: Longer walk needs more energy
+    "rest": [3, 0, 0], # Assumption: Rest improves only energy and social energy
+    "walk": [lambda length: -length * 0.1, 1, 0], # Assumption: Longer walk needs more energy, and improves social energy
     "take_bus": [-1, lambda crowd, tolerance: -(float(crowd)/float(tolerance+1e-12)), 0],  # 1e-12 to avoid division by zero
 }
 
 def get_building_coords(building : str):
-    if building == "home": # TODO: Right now every agent shares the same house and workplace coordinates
-        return [0, 0]
-    elif building == "work":
-        return [10, 0]
-    else:
-        raise ValueError(f"Undefined building name: {building}")
+    # TODO: Right now every agent shares the same house and workplace coordinates
+    return config['locations'][building]
+    
 
 class Agent:
-    def __init__(self, name, social_tolerance):
+    def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0"):
         self.name = name
-        self.where = "home"
+
+        self.home = home
+        self.workplace = workplace
+
+        self.where = home
         self.state = "idle"
         self.bus_waiting = False
         self.in_recovery = False
@@ -89,17 +94,16 @@ class Agent:
         if self._check_burnout(): # Enters recovery if needed
             return
        
-        # POLICY: Fixed schedule
+        # POLICY: Fixed schedule -> Shouldn't be here, deliberation is done via needs-satisfaction
         if time % DAY_LENGTH < 20:
-            self.move_to("work")
+            self.move_to(self.workplace)
         elif time % DAY_LENGTH < 60:
             self.do_work()
         elif time % DAY_LENGTH < 80:
-            self.move_to("home")
+            self.move_to(self.home)
         else:
             self.rest()
         
-
     def _get_distance(self, start, end, type="manhattan"):
 
         if type == "manhattan":
@@ -160,7 +164,6 @@ class Agent:
 
 if __name__ == "__main__":
     # Setup agents
-    NUM_AGENTS = 50
     agents = [Agent("A"+str(i), social_tolerance=random.choice([0, 1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
 
     # Simulate

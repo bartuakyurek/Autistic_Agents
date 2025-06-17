@@ -1,0 +1,20 @@
+
+simulation:
+  grid_size: [30, 30]
+  day_length: 240
+  max_ticks: 580
+  num_agents: 30
+
+agent: 
+  # Default values
+  name: "A0"
+  home: "home_0"
+  workplace: "workplace_0"
+  social_tolerance: 3
+
+  # Constants
+  energy_capacity: 10
+  
+locations:
+  home_0: [1, 1]
+  workplace_0: [25, 25]

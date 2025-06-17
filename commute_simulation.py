@@ -134,8 +134,11 @@ class Agent:
                 self.where = target
 
     def do_work(self):
-        delta = ACTION_EFFECTS["work"]
-        self.apply_action("work", [delta[0], delta[1](), delta[2]])
+        if self.where == self.workplace:
+            delta = ACTION_EFFECTS["work"]
+            self.apply_action("work", [delta[0], delta[1](), delta[2]])
+        else:
+            logger.warning(f"Agent can only work at {self.workplace}! Currently at {self.where}.")
        
     def rest(self):
         if self.where == self.home:

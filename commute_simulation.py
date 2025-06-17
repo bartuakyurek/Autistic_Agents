@@ -103,9 +103,11 @@ class Agent:
             self.move_to(self.home)
         else:
             self.rest()
+        # TODO: remove above and call get_available_Actions() - in which when you can work will be stated there -
+        # together with needs, we will call eqn.3 
         
-    def _get_distance(self, start, end, type="manhattan"):
-
+    def _get_distance(self, start, end, type="manhattan"): 
+        # TODO: should be A* with city grid, right now it assumes every cell is available and only computes manhattan dist
         if type == "manhattan":
             assert len(start) == 2 and len(end) == 2, f"Expected 2D coordinates, got start: {start} and end: {end}."
             return np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])

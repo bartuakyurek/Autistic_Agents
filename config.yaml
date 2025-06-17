@@ -3,7 +3,7 @@ simulation:
   grid_size: [30, 30]
   day_length: 240
   max_ticks: 580
-  num_agents: 30
+  num_agents: 300
 
 agent: 
   # Default values

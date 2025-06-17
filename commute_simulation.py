@@ -25,9 +25,9 @@ logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', l
 # Action effect matrix (Need-Satisfaction Matrix)
 ACTION_EFFECTS = {
     "work": [-2, lambda: -1 if random.random() < 0.5 else 0, 5],
-    "rest": [3, 0, 0], # Assumption: Rest improves only energy and social energy
+    "rest": [3, 1, 0], # Assumption: Rest improves only energy, not social energy
     "walk": [lambda length: -length * 0.1, 1, 0], # Assumption: Longer walk needs more energy, and improves social energy
-    "take_bus": [-1, lambda crowd, tolerance: -(float(crowd)/float(tolerance+1e-12)), 0],  # 1e-12 to avoid division by zero
+    "take_bus": [-1, lambda crowd, tolerance: -(float(crowd ** 2)/float(tolerance+1e-12)), 0],  # 1e-12 to avoid division by zero
 }
 
 def get_building_coords(building : str):
@@ -138,6 +138,10 @@ class Agent:
         self.apply_action("work", [delta[0], delta[1](), delta[2]])
        
     def rest(self):
+        if self.where == self.home:
+            self.apply_action("rest", ACTION_EFFECTS["rest"])
+        else:
+            logger.warning(f"Agent can only rest at {self.home}! Currently at {self.where}.")
 
     def apply_action(self, action, effect):
         logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')
@@ -163,7 +167,7 @@ class Agent:
 
 if __name__ == "__main__":
     # Setup agents
-    agents = [Agent("A"+str(i), social_tolerance=random.choice([0, 1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
+    agents = [Agent("A"+str(i), social_tolerance=random.choice([1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
 
     # Simulate
     for t in range(MAX_TICKS):
@@ -179,6 +183,8 @@ if __name__ == "__main__":
             tolerance_groups[tol] = []
         tolerance_groups[tol].append(agent.final_wealth())
 
+    # TODO: Confidence interval should be computed for trials of same experimental settings 
+    # I think for social tolerance levels we should just show max/mean/min values
     # Compute mean and 95% confidence intervals
     labels = sorted(tolerance_groups.keys())
     means = [np.mean(tolerance_groups[t]) for t in labels]

@@ -2,3 +2,4 @@ scrape.py
 /__pycache__
 *.pyc
 /project-env
+simulation.log

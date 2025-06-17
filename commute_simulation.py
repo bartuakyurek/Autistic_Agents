@@ -89,7 +89,6 @@ class Agent:
         if self._check_burnout(): # Enters recovery if needed
             return
        
-        # Simulate basic day: commute, work, return
         # POLICY: Fixed schedule
         if time % DAY_LENGTH < 20:
             self.move_to("work")
@@ -100,7 +99,6 @@ class Agent:
         else:
             self.rest()
         
-        # TODO: Other Policies?
 
     def _get_distance(self, start, end, type="manhattan"):
 
@@ -115,7 +113,7 @@ class Agent:
                 crowd = random.randint(0, 3)
                 if crowd <= self.social_tolerance:
                     delta = ACTION_EFFECTS["take_bus"]
-                    self.apply_action("take_bus", [delta[0], delta[1](crowd, self.social_tolerance), delta[2]])
+                    self.apply_action("take_bus", [delta[0], delta[1](crowd, self.social_tolerance), delta[2]]) # TODO: Better way to do it?
                     self.where = target
                 else:
                     take_walk = True
@@ -126,7 +124,7 @@ class Agent:
                 delta = ACTION_EFFECTS["walk"]
                 start_coord = get_building_coords(self.where)
                 end_coord  =  get_building_coords(target)
-                delta = [delta[0](self._get_distance(start_coord, end_coord)), delta[1], delta[2]]
+                delta = [delta[0](self._get_distance(start_coord, end_coord)), delta[1], delta[2]] # TODO: Better way to do it?
 
                 self.apply_action("walk", delta)
                 self.where = target

@@ -2,7 +2,7 @@
 from PIL import Image
 import numpy as np
 
-from colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR
+from unused.colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR
 color_tolerance = 20  # allowed difference per channel
 
 def load_entity_pixels(image_path, target_color)->np.ndarray:

@@ -4,7 +4,7 @@ from mesa import Agent
 from mesa.experimental.cell_space import FixedAgent
 
 
-from colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR, AGENT_COLOR, BUS_COLOR
+from unused.colors import ROAD_COLOR, BUS_STOP_COLOR, BUILDING_COLOR, AGENT_COLOR, BUS_COLOR
 
 
 #######################################################################################################################

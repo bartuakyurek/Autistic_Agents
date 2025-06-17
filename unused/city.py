@@ -7,8 +7,8 @@ from mesa.space import MultiGrid
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from agent import *
-from io_handler import load_city, get_image_width_height
+from unused.agent import *
+from unused.io_handler import load_city, get_image_width_height
 
 
 class City(Model):

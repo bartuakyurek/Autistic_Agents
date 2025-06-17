@@ -22,14 +22,22 @@ ACTION_EFFECTS = {
     "work": [-2, lambda: -1 if random.random() < 0.5 else 0, 5],
     "rest": [3, 0, 0],
     "socialize": [0, 3, 0],
-    "walk": [-1, 0, 0],
+    "walk": [lambda length: -length * 0.1, 0, 0], # Assumption: Longer walk needs more energy
     "take_bus": [-1, lambda crowd, tolerance: -(float(crowd)/float(tolerance+1e-12)), 0],  # 1e-12 to avoid division by zero
 }
+
+def get_building_coords(building : str):
+    if building == "home": # TODO: Right now every agent shares the same house and workplace coordinates
+        return [0, 0]
+    elif building == "work":
+        return [10, 0]
+    else:
+        raise ValueError(f"Undefined building name: {building}")
 
 class Agent:
     def __init__(self, name, social_tolerance):
         self.name = name
-        self.location = "home"
+        self.where = "home"
         self.state = "idle"
         self.bus_waiting = False
         self.in_recovery = False
@@ -82,6 +90,7 @@ class Agent:
             return
        
         # Simulate basic day: commute, work, return
+        # POLICY: Fixed schedule
         if time % DAY_LENGTH < 20:
             self.move_to("work")
         elif time % DAY_LENGTH < 60:
@@ -90,27 +99,42 @@ class Agent:
             self.move_to("home")
         else:
             self.rest()
+        
+        # TODO: Other Policies?
 
-    def move_to(self, target):
-        if self.location != target:
+    def _get_distance(self, start, end, type="manhattan"):
+
+        if type == "manhattan":
+            assert len(start) == 2 and len(end) == 2, f"Expected 2D coordinates, got start: {start} and end: {end}."
+            return np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
+
+    def move_to(self, target:str):
+        take_walk = False
+        if self.where != target:
             if random.random() < 0.5:
                 crowd = random.randint(0, 3)
                 if crowd <= self.social_tolerance:
                     delta = ACTION_EFFECTS["take_bus"]
                     self.apply_action("take_bus", [delta[0], delta[1](crowd, self.social_tolerance), delta[2]])
-                    self.location = target
+                    self.where = target
                 else:
-                    self.apply_action("walk", ACTION_EFFECTS["walk"])
-                    self.location = target
+                    take_walk = True
             else:
-                self.apply_action("walk", ACTION_EFFECTS["walk"])
-                self.location = target
+                take_walk = True
+            
+            if take_walk:
+                delta = ACTION_EFFECTS["walk"]
+                start_coord = get_building_coords(self.where)
+                end_coord  =  get_building_coords(target)
+                delta = [delta[0](self._get_distance(start_coord, end_coord)), delta[1], delta[2]]
+
+                self.apply_action("walk", delta)
+                self.where = target
 
     def do_work(self):
         delta = ACTION_EFFECTS["work"]
         self.apply_action("work", [delta[0], delta[1](), delta[2]])
        
-        
     def rest(self):
         self.apply_action("rest", ACTION_EFFECTS["rest"])
 

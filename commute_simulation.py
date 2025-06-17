@@ -73,7 +73,7 @@ class Agent:
             return True # Recovery completed
         return False
 
-    def act(self, time):
+    def deliberate_action(self, time):
         if self.in_recovery:
             self._recover_burnout_step()
             return
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     for t in range(MAX_TICKS):
         for agent in agents:
             _TIME = t # For logging
-            agent.act(t)
+            agent.deliberate_action(t)
 
     # Gather data for plotting
     tolerance_groups = {}

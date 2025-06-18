@@ -53,11 +53,11 @@ class Agent:
         self.energy_burnout_sum = 0
 
         self.NEED_CATEGORIES = {
-        "energy": {"category": "physical", "max": 20, "timestep_multiplier":0.98},
-        "alone_time": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # no timestep_multiplier
-        "socialization": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # there's no "social" need, but here we lump friendship, family, intimacy
-        "financial_security": {"category": "economic", "max": 10, "timestep_multiplier":1},  # no timestep_multiplier
-        "self_esteem": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # normally it belongs to "esteem" category, not social  
+        "energy": {"category": "physical", "max": 1, "timestep_multiplier":0.98},
+        "alone_time": {"category": "psychological", "max": 1, "timestep_multiplier":1}, # no timestep_multiplier
+        "socialization": {"category": "psychological", "max": 1, "timestep_multiplier":1}, # there's no "social" need, but here we lump friendship, family, intimacy
+        "financial_security": {"category": "economic", "max": 1, "timestep_multiplier":1},  # no timestep_multiplier
+        "self_esteem": {"category": "psychological", "max": 1, "timestep_multiplier":1}, # normally it belongs to "esteem" category, not social  
         }
 
         self.CATEGORY_IMPORTANCE = { # Equally important atm
@@ -122,7 +122,7 @@ class Agent:
             needs_dict["energy"] = 0
 
             if self.where == self.home: # WARNING: Assumes take_bus means take_bus_to_workplace
-                needs_dict["financial_security"] = +5 # Assumption: Taking bus has more financial security than walk because it has shorter path
+                needs_dict["financial_security"] = +0.8 # Assumption: Taking bus has more financial security than walk because it has shorter path
         
         elif action == "walk":
             if "length" not in kwargs.keys(): 
@@ -131,37 +131,37 @@ class Agent:
             else:
                 len = kwargs["length"]
         
-            needs_dict["energy"] = -len * 0.1
+            needs_dict["energy"] = -len * 0.1 / 4
             needs_dict["alone_time"] = +1 
 
             if self.where == self.home:
                 needs_dict["financial_security"] = +3 # WARNING: Assumes take_bus means take_bus_to_workplace
         
         elif action == "rest":
-            needs_dict["energy"] = +0.2
-            needs_dict["alone_time"] = +0.2
+            needs_dict["energy"] = +0.05
+            needs_dict["alone_time"] = +0.05
 
             if self.where == self.workplace:
-                needs_dict["financial_security"] = -1
+                needs_dict["financial_security"] = -0.1
 
         elif action == "sleep":
-            needs_dict["energy"] = +1
-            needs_dict["alone_time"] = +1
+            needs_dict["energy"] = +0.1
+            needs_dict["alone_time"] = +0.1
 
             if self.where == self.workplace:
-                needs_dict["financial_security"] = -5
+                needs_dict["financial_security"] = -0.5
 
         elif action == "work":
-            social_factor =  +1 if random.random() < 0.5 else 0 # Potentially socialize during work
+            social_factor =  +0.1 if random.random() < 0.5 else 0 # Potentially socialize during work
 
-            needs_dict["energy"] = -2
+            needs_dict["energy"] = -0.2
             needs_dict["alone_time"] = -social_factor
             needs_dict["socialization"] = social_factor
-            needs_dict["financial_security"]  = +5
+            needs_dict["financial_security"]  = +0.8
         
         elif action == "meltdown": 
             needs_dict["energy"] = -0.2
-            needs_dict["self_esteem"] = -1 # WARNING: It does not affect anything atm
+            needs_dict["self_esteem"] = -0.1 # WARNING: It does not affect anything atm
 
         elif action == "wait":
             pass # No effect
@@ -431,35 +431,48 @@ def get_policy_colors(policy):
         print(f"WARNING: Undefined color for policy: {policy}")
         return "pink"
 
+
+def prepare_results_path(policy):
+    results_dir = os.path.join(os.path.dirname(__file__), "results")
+    os.makedirs(results_dir, exist_ok=True)
+
+    policy_results_dir = os.path.join(results_dir, policy)
+    os.makedirs(policy_results_dir, exist_ok=True)
+    return policy_results_dir
+
 if __name__ == "__main__":
     # Setup agents
-    POLICY = "flex" # Options: "fixed", "free", "flex"
+    policies = ["fixed", "free", "flex"]
+        
+    for POLICY in policies:
+        #POLICY = "free" # Options: "fixed", "free", "flex"
 
-    available_homes = [k for k in config["houses"].keys()]
-    available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
-    available_tolerances = [i+1 for i in range(7)]
-    print("Chosen policy: ", POLICY)
-    print("Available workplaces: ", available_workplaces)
-    print("Available houses: ", available_homes)
-    agents = []
-    for i in range(NUM_AGENTS):
-        a = Agent(name="A"+str(i), 
-                     home=random.choice(available_homes),
-                     workplace=random.choice(available_workplaces),
-                    social_tolerance=random.choice(available_tolerances)
-                 ) 
-        agents.append(a)
+        available_homes = [k for k in config["houses"].keys()]
+        available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
+        available_tolerances = [i+1 for i in range(7)]
+        print("Chosen policy: ", POLICY)
+        print("Available workplaces: ", available_workplaces)
+        print("Available houses: ", available_homes)
+        agents = []
+        for i in range(NUM_AGENTS):
+            a = Agent(name="A"+str(i), 
+                        home=random.choice(available_homes),
+                        workplace=random.choice(available_workplaces),
+                        social_tolerance=random.choice(available_tolerances)
+                    ) 
+            agents.append(a)
 
-    # Simulate
-    for t in range(MAX_TICKS):
-        for agent in agents:
-            _TIME = t # For logging
-            agent.deliberate_action(t)
-            agent.decay_needs_sat() # Water tank model, decay needs
+        # Simulate
+        for t in range(MAX_TICKS):
+            for agent in agents:
+                _TIME = t # For logging
+                agent.deliberate_action(t)
+                agent.decay_needs_sat() # Water tank model, decay needs
 
-    from plot import plot_wealth_distribution, plot_relations
-    plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color=get_policy_colors(POLICY), save=True)
-    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
-    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
-    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
-    plot_relations(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")
+        from plot import plot_wealth_distribution, plot_relations
+        res_path = prepare_results_path(POLICY)
+        plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color=get_policy_colors(POLICY), save=True, results_dir=res_path)
+        plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth", results_dir=res_path)
+        plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate", results_dir=res_path)
+        plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate", results_dir=res_path)
+        plot_relations(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth", results_dir=res_path)

@@ -20,7 +20,7 @@ def gini_coefficient(values):
     index = np.arange(1, n + 1)
     return (np.sum((2 * index - n - 1) * array)) / (n * np.sum(array))
 
-def plot_wealth_distribution(agents, title="No norms", color="gray", save=False):
+def plot_wealth_distribution(agents, title="No norms", color="gray", save=False, results_dir="results"):
     """Plot wealth histogram with Gini annotation like in the aporophobia paper."""
     wealths = np.array([agent.final_wealth() for agent in agents])
 
@@ -51,11 +51,8 @@ def plot_wealth_distribution(agents, title="No norms", color="gray", save=False)
 
     # Save if needed
     if save:
-        results_dir = os.path.join(os.path.dirname(__file__), "results")
-        os.makedirs(results_dir, exist_ok=True)
         fname = title.lower().replace(" ", "_").replace(":","_") + ".png"
-        plt.savefig(os.path.join(results_dir, fname))
-        print(f"Saved to {os.path.join(results_dir, fname)}")
+        save_plot(results_dir=results_dir, title=fname)
         plt.close()
     else:
         plt.show()
@@ -65,15 +62,14 @@ def plot_wealth_distribution(agents, title="No norms", color="gray", save=False)
 # Attribute vs. Another attribute plots (e.g. social tolerance vs. wealth)
 ################################################################################################################
 
-def save_plot(title):
-    results_dir = os.path.join(os.path.dirname(__file__), "results")
-    os.makedirs(results_dir, exist_ok=True)
+
+def save_plot(title, results_dir):
     save_path = os.path.join(results_dir, f"{title}.png")
     plt.savefig(save_path)
     print(f"Plot saved to: {save_path}")
     
 
-def plot_relations(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True):
+def plot_relations(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True, results_dir="results"):
     # Gather data for plotting
     tolerance_groups = {}
     for agent in agents:
@@ -101,7 +97,7 @@ def plot_relations(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=
     plt.tight_layout()
     
     if save_fig:
-        save_plot(title)
+        save_plot(title, results_dir)
         plt.close()
     else:
         plt.show()

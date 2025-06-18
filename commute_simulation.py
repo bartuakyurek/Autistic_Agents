@@ -126,7 +126,7 @@ class Agent:
         
         elif action == "walk":
             if "length" not in kwargs.keys(): 
-                len = random.randint(1, 20) # This should be updated if you want to introduce other locations, e.g. a park to rest or actual bus stops
+                len =  random.randint(1, 20) # This should be updated if you want to introduce other locations, e.g. a park to rest or actual bus stops
                 logger.warning(f"No length is provided! Estimated length (RANDOM) {len}.") 
             else:
                 len = kwargs["length"]
@@ -433,7 +433,7 @@ def get_policy_colors(policy):
 
 if __name__ == "__main__":
     # Setup agents
-    POLICY = "fixed" # Options: "fixed", "free"
+    POLICY = "flex" # Options: "fixed", "free", "flex"
 
     available_homes = [k for k in config["houses"].keys()]
     available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy

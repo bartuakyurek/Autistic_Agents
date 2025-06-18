@@ -433,7 +433,7 @@ def get_policy_colors(policy):
 
 if __name__ == "__main__":
     # Setup agents
-    POLICY = "flex" # Options: "fixed", "free"
+    POLICY = "fixed" # Options: "fixed", "free"
 
     available_homes = [k for k in config["houses"].keys()]
     available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy

@@ -22,8 +22,13 @@ logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', l
 
 
 def get_building_coords(building : str):
-    # TODO: Right now every agent shares the same house and workplace coordinates
-    return config['locations'][building]
+    # TODO: UNUSED - Walking currently takes random effects, it should be scaled with distance in the upcoming commits
+    if building[:4] == "home":
+        return config['houses'][building]
+    elif building[:4] == "work":
+        return config['workplace_locations'][building]
+    else:
+        raise ValueError(f"Unknown building name: {building}. Please make sure this building is either declared in .yaml or implemented correctly in if-else above")
     
 def _get_crowd_cost(tolerance, crowd=None):
     if crowd is None:
@@ -424,12 +429,36 @@ def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True
     else:
         plt.show()
 
+def get_workplaces(policy):
+    workplaces = []
+    for wp in config["workplace_locations"]:
+        assert wp in config["policy"], f"Please specify policy for workplace {wp} in config.yaml under policy section."
+        if policy == config["policy"][wp]:
+            workplaces.append(wp)
+    
+    if len(workplaces) == 0:
+        raise ValueError(f"No workplace found with policy {policy}. Consider adding it in config.yaml under policy section.")
+    return workplaces
+
+def get_policy_colors(policy):
+    if policy == "fixed":
+        return "gray"
+    elif policy == "free":
+        return "cyan"
+    else:
+        print(f"WARNING: Undefined color for policy: {policy}")
+        return "pink"
+
 if __name__ == "__main__":
     # Setup agents
-    available_homes = ["home_0"]
-    available_workplaces = ["workplace_0"]  # TODO: Decouple workplace and their policies to be consistent
-    available_tolerances = [i+1 for i in range(7)]
+    POLICY = "free" # Options: "fixed", "free"
 
+    available_homes = [k for k in config["houses"].keys()]
+    available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
+    available_tolerances = [i+1 for i in range(7)]
+    print("Chosen policy: ", POLICY)
+    print("Available workplaces: ", available_workplaces)
+    print("Available houses: ", available_homes)
     agents = []
     for i in range(NUM_AGENTS):
         a = Agent(name="A"+str(i), 
@@ -447,10 +476,8 @@ if __name__ == "__main__":
             agent.decay_needs_sat() # Water tank model, decay needs
 
     from plot import plot_wealth_distribution
-    plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color="gray", save=False)
-
-
-    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
-    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
-    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
-    #plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")
+    plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color=get_policy_colors(POLICY), save=True)
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
+    plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")

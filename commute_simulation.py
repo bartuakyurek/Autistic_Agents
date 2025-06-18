@@ -367,24 +367,14 @@ class Agent:
         print(f"{self.name} final wealth: {self.final_wealth()}")
         # TODO: More attributes to report?
 
-if __name__ == "__main__":
-    # Setup agents
-    agents = [Agent("A"+str(i), social_tolerance=random.choice([1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
-
-    # Simulate
-    for t in range(MAX_TICKS):
-        for agent in agents:
-            _TIME = t # For logging
-            agent.deliberate_action(t)
-            agent.decay_needs_sat() # Water tank model, decay needs
-
+def plot_stats(agents, x_fn, y_fn):
     # Gather data for plotting
     tolerance_groups = {}
     for agent in agents:
-        tol = agent.social_tolerance
+        tol = x_fn(agent)
         if tol not in tolerance_groups:
             tolerance_groups[tol] = []
-        tolerance_groups[tol].append(agent.final_wealth())
+        tolerance_groups[tol].append(y_fn(agent))
 
     # TODO: Confidence interval should be computed for trials of same experimental settings 
     # I think for social tolerance levels we should just show max/mean/min values
@@ -404,3 +394,17 @@ if __name__ == "__main__":
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+
+if __name__ == "__main__":
+    # Setup agents
+    agents = [Agent("A"+str(i), social_tolerance=random.choice([1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
+
+    # Simulate
+    for t in range(MAX_TICKS):
+        for agent in agents:
+            _TIME = t # For logging
+            agent.deliberate_action(t)
+            agent.decay_needs_sat() # Water tank model, decay needs
+
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth())

@@ -39,17 +39,16 @@ class Agent:
         self.workplace = workplace
 
         self.where = home
-        self.state = "idle"
-        self.bus_waiting = False
-        self.in_recovery = False
+        self.wealth = 0
+        self.in_recovery = False # True if in "meltdown"
         self.recovery_timer = 0
 
         self.NEED_CATEGORIES = {
-        "energy": {"category": "physical", "max": 10, "decay":0.9},
-        "alone_time": {"category": "psychological", "max": 10, "decay":1}, # no decay
-        "socialization": {"category": "psychological", "max": 10, "decay":1}, # there's no "social" need, but here we lump friendship, family, intimacy
-        "wealth": {"category": "economic", "max": None, "decay":1},  # no max cap, no decay
-        "self_esteem": {"category": "psychological", "max": 10, "decay":1}, # normally it belongs to "esteem" category, not social  
+        "energy": {"category": "physical", "max": 10, "timestep_multiplier":0.9},
+        "alone_time": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # no timestep_multiplier
+        "socialization": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # there's no "social" need, but here we lump friendship, family, intimacy
+        "financial_security": {"category": "economic", "max": 10, "timestep_multiplier":1},  # no timestep_multiplier
+        "self_esteem": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # normally it belongs to "esteem" category, not social  
         }
 
         self.CATEGORY_IMPORTANCE = { # Equally important atm
@@ -95,7 +94,7 @@ class Agent:
         # Need-Satisfaction Level decay, NSL_t (Eqn.1)
         # for a single time-step
         for n in self.needs:
-            self.needs[n] = self.NEED_CATEGORIES[n]['decay'] * self.needs[n] # iterative
+            self.needs[n] = self.NEED_CATEGORIES[n]['timestep_multiplier'] * self.needs[n] # iterative
 
     def get_action_effect(self, action, **kwargs):
         # Need-Satisfaction Matrix
@@ -111,8 +110,10 @@ class Agent:
             crowd = kwargs["crowd"] if "crowd" in kwargs.keys() else None
             
             needs_dict["alone_time"] = _get_crowd_cost(tolerance=self.social_tolerance, crowd=crowd)
-            needs_dict["energy"] = -1
-            needs_dict["wealth"] = -0.01
+            needs_dict["energy"] = 0
+
+            if self.where == self.home: # WARNING: Assumes take_bus means take_bus_to_workplace
+                needs_dict["financial_security"] = +5 # Assumption: Taking bus has more financial security than walk because it has shorter path
         
         elif action == "walk":
             if "length" not in kwargs.keys(): 
@@ -123,14 +124,23 @@ class Agent:
         
             needs_dict["energy"] = -len * 0.1
             needs_dict["alone_time"] = +1 
+
+            if self.where == self.home:
+                needs_dict["financial_security"] = +3 # WARNING: Assumes take_bus means take_bus_to_workplace
         
         elif action == "rest":
-            needs_dict["energy"] = +2
-            needs_dict["alone_time"] = +1
+            needs_dict["energy"] = +0.2
+            needs_dict["alone_time"] = +0.2
+
+            if self.where == self.workplace:
+                needs_dict["financial_security"] = -1
 
         elif action == "sleep":
-            needs_dict["energy"] = +5
-            needs_dict["alone_time"] = +5
+            needs_dict["energy"] = +1
+            needs_dict["alone_time"] = +1
+
+            if self.where == self.workplace:
+                needs_dict["financial_security"] = -5
 
         elif action == "work":
             social_factor =  +1 if random.random() < 0.5 else 0 # Potentially socialize during work
@@ -138,7 +148,7 @@ class Agent:
             needs_dict["energy"] = -2
             needs_dict["alone_time"] = -social_factor
             needs_dict["socialization"] = social_factor
-            needs_dict["wealth"]  = +5
+            needs_dict["financial_security"]  = +5
         
         elif action == "wait":
             pass # No effect
@@ -187,7 +197,7 @@ class Agent:
             if time % DAY_LENGTH < 20:
                 return {"sleep", "rest"}
             elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
-                return {"sleep", "rest", "walk", "take_bus"}
+                return { "rest", "walk", "take_bus"} # Assumption: cannot sleep during work hours
             else:
                 return {"sleep", "rest"}
        
@@ -268,19 +278,9 @@ class Agent:
        
         chosen_action = self.choose_action(time)
         effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
-        # self.apply_action(chosen_action, effect=effect)
+        
+        self.apply_action(chosen_action, effect=effect)
 
-        """# POLICY: Fixed schedule -> Shouldn't be here, deliberation is done via needs-satisfaction
-        if time % DAY_LENGTH < 20:
-            self.move_to(self.workplace)
-        elif time % DAY_LENGTH < 60:
-            self.do_work()
-        elif time % DAY_LENGTH < 80:
-            self.move_to(self.home)
-        else:
-            self.rest()
-        # TODO: remove above and call get_available_Actions() - in which when you can work will be stated there -
-        # together with needs, we will call eqn.3 """
         
     def _get_distance(self, start, end, type="manhattan"): 
         # TODO: should be A* with city grid, right now it assumes every cell is available and only computes manhattan dist
@@ -310,10 +310,11 @@ class Agent:
                 self.apply_action("walk", delta)
                 self.where = target
 
-    def do_work(self):
+    def do_work(self, hourly_income=5):
         if self.where == self.workplace:
             delta =  self.get_action_effect("work")
             self.apply_action("work", delta)
+            self.wealth += hourly_income
         else:
             logger.warning(f"Agent can only work at {self.workplace}! Currently at {self.where}.")
        
@@ -337,7 +338,7 @@ class Agent:
         self._clamp_needs()
 
     def final_wealth(self):
-        return self.needs["wealth"]
+        return self.wealth
     
     def report(self):
         print(f"{self.name} final wealth: {self.final_wealth()}")

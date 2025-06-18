@@ -32,7 +32,6 @@ def _get_crowd_cost(tolerance, crowd=None):
 
     return -(float(crowd ** 2)/float(tolerance+1e-12)) # 1e-12 to avoid division by zero
     
-
 class Agent:
     def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0", income=5):
         self.name = name
@@ -215,6 +214,14 @@ class Agent:
                 return {"walk", "take_bus"}
         else:
             raise ValueError(f"Unknown location string {location_str}")
+        
+    def get_free_policy_actions(self, time, location_str):
+        if location_str == "home":
+            return {"work", "sleep", "rest", "take_bus", "wait", "walk"} # Work from home available
+        elif location_str == "work":
+            return {"work", "sleep", "rest", "take_bus", "wait", "walk"} # Sleep at work available
+        else:
+            raise ValueError(f"Unknown location string {location_str}")
 
     def get_available_actions(self, time):
         # Valid actions (see get_action_effect()): 
@@ -228,17 +235,25 @@ class Agent:
         if self.where == self.home:
             if policy == "fixed":
                 return self.get_fixed_policy_actions(time, "home")
-            else:
+
+            elif policy == "free":
+                return self.get_free_policy_actions(time, "home")
+            
+            else:  
                 logger.warning(f"Unknown policy {policy}")
-                return {"sleep", "walk", "take_bus"}
+                return {}
         
         # Workplace actions based on policy
         elif self.where == self.workplace:
             if policy == "fixed":
                 return self.get_fixed_policy_actions(time, "work")
-            else:
+            
+            elif policy == "free":
+                return self.get_free_policy_actions(time, "work")
+
+            else:  
                 logger.warning(f"Unknown policy {policy}")
-                return {"rest", "sleep", "walk", "take_bus", "work"}
+                return {}  
             
         # Undefined place
         else:
@@ -376,7 +391,7 @@ def save_plot(title):
     print(f"Plot saved to: {save_path}")
     
 
-def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=False):
+def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True):
     # Gather data for plotting
     tolerance_groups = {}
     for agent in agents:
@@ -411,7 +426,18 @@ def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=Fals
 
 if __name__ == "__main__":
     # Setup agents
-    agents = [Agent("A"+str(i), social_tolerance=random.choice([1, 2, 3, 4, 5, 6 , 7])) for i in range(NUM_AGENTS)]
+    available_homes = ["home_0"]
+    available_workplaces = ["workplace_1"]
+    available_tolerances = [i+1 for i in range(7)]
+
+    agents = []
+    for i in range(NUM_AGENTS):
+        a = Agent(name="A"+str(i), 
+                     home=random.choice(available_homes),
+                     workplace=random.choice(available_workplaces),
+                    social_tolerance=random.choice(available_tolerances)
+                 ) 
+        agents.append(a)
 
     # Simulate
     for t in range(MAX_TICKS):
@@ -422,6 +448,6 @@ if __name__ == "__main__":
 
     
     plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
-    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
-    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
-    #plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
+    plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")

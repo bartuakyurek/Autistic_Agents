@@ -19,9 +19,10 @@ agent:
 locations:
   home_0: [1, 1]
   workplace_0: [25, 25]
-  # workplace_1: [25, 25]
+  workplace_1: [25, 25]
 
 policy:
   workplace_0: "fixed"
-  #workplace_1: "flex_2" # trailing number indicates flexible hours
+  workplace_1: "free"
+  workplace_2: "flex_2" # trailing number indicates flexible hours
 

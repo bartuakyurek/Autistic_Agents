@@ -10,11 +10,11 @@ agent:
   name: "A0"
   home: "home_0"
   workplace: "workplace_0"
-  income: 5
-  social_tolerance: 3
-
+  income: 5             # WARNING: UNUSED 
+  social_tolerance: 3  # WARNING: UNUSED 
+  
   # Constants
-  energy_capacity: 10
+  energy_capacity: 20 # WARNING: UNUSED 
   
 locations:
   home_0: [1, 1]

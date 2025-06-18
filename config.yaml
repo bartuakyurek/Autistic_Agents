@@ -10,6 +10,7 @@ agent:
   name: "A0"
   home: "home_0"
   workplace: "workplace_0"
+  income: 5
   social_tolerance: 3
 
   # Constants

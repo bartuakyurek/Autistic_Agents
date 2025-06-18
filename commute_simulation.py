@@ -32,7 +32,6 @@ def _get_crowd_cost(tolerance, crowd=None):
     return -(float(crowd ** 2)/float(tolerance+1e-12)) # 1e-12 to avoid division by zero
     
 
-
 class Agent:
     def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0"):
         self.name = name
@@ -167,6 +166,37 @@ class Agent:
             return True # Recovery completed
         return False
 
+    def get_available_actions(self):
+        print("WARNING!! Implement available actions!")
+        return {"rest"}
+
+    def compute_urgency(self, need_key):
+        max_val = self.NEED_CATEGORIES[need_key]["max"]
+        if max_val is None:
+            return 0.1  # Minimal urgency for unbounded needs (do not set to 0)
+        current_val = self.needs[need_key]
+        return 1 - current_val / max_val
+
+    def choose_action(self):
+
+        best_score = float('-inf')
+        best_action = None
+
+        actions = self.get_available_actions()
+        for action in actions:
+            estimated_effects = self.get_action_effect(action)
+            score = 0
+            for need_key, delta in estimated_effects.items():
+                category = self.NEED_CATEGORIES[need_key]["category"]
+                importance = self.CATEGORY_IMPORTANCE.get(category, 1.0)
+                urgency = self.compute_urgency(need_key)
+                score += delta * urgency * importance 
+            if score > best_score:
+                best_score = score
+                best_action = action
+
+        return best_action
+
     def deliberate_action(self, time):
         if self.in_recovery:
             self._recover_burnout_step()
@@ -175,7 +205,11 @@ class Agent:
         if self._check_burnout(): # Enters recovery if needed
             return
        
-        # POLICY: Fixed schedule -> Shouldn't be here, deliberation is done via needs-satisfaction
+        chosen_action = self.choose_action()
+        effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
+        self.apply_action(chosen_action, effect=effect)
+
+        """# POLICY: Fixed schedule -> Shouldn't be here, deliberation is done via needs-satisfaction
         if time % DAY_LENGTH < 20:
             self.move_to(self.workplace)
         elif time % DAY_LENGTH < 60:
@@ -185,7 +219,7 @@ class Agent:
         else:
             self.rest()
         # TODO: remove above and call get_available_Actions() - in which when you can work will be stated there -
-        # together with needs, we will call eqn.3 
+        # together with needs, we will call eqn.3 """
         
     def _get_distance(self, start, end, type="manhattan"): 
         # TODO: should be A* with city grid, right now it assumes every cell is available and only computes manhattan dist

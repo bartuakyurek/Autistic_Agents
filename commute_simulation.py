@@ -42,7 +42,10 @@ class Agent:
         self.wealth = 0
         self.TIMESTEP_INCOME = income
         self.in_recovery = False # True if in "meltdown"
+        self.burnout_state = None
         self.recovery_timer = 0
+        self.social_burnout_sum = 0
+        self.energy_burnout_sum = 0
 
         self.NEED_CATEGORIES = {
         "energy": {"category": "physical", "max": 20, "timestep_multiplier":0.98},
@@ -62,7 +65,7 @@ class Agent:
         self.needs =  copy.deepcopy(self.initial_needs)
 
         self.social_tolerance = social_tolerance
-        self.burnout_state = None
+        
 
     def get_needs_dict(self, set_zero=True):
         # This is where needs are defined 
@@ -271,7 +274,10 @@ class Agent:
 
     def deliberate_action(self, time):
         if self.in_recovery:
+            print(f"Agent {self.name} is in the recovery from {self.burnout_state} burnout... Accumulated social {self.social_burnout_sum } and {self.energy_burnout_sum} energy burnout scores.")
             self._recover_burnout_step()
+            if self.burnout_state == "social": self.social_burnout_sum += 1
+            if self.burnout_state == "energy": self.energy_burnout_sum += 1
             return
         
         if self._check_burnout(): # Enters recovery if needed

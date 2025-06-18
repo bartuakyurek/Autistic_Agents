@@ -91,6 +91,12 @@ class Agent:
             if item["max"] is not None:
                 self.needs[key] = max(0, min(item["max"], self.needs[key]))
 
+    def decay_needs_sat(self):
+        # Need-Satisfaction Level decay, NSL_t (Eqn.1)
+        # for a single time-step
+        for n in self.needs:
+            self.needs[n] = self.NEED_CATEGORIES[n]['decay'] * self.needs[n] # iterative
+
     def get_action_effect(self, action, **kwargs):
         # Need-Satisfaction Matrix
         # with amendments:
@@ -346,6 +352,7 @@ if __name__ == "__main__":
         for agent in agents:
             _TIME = t # For logging
             agent.deliberate_action(t)
+            agent.decay_needs_sat() # Water tank model, decay needs
 
     # Gather data for plotting
     tolerance_groups = {}

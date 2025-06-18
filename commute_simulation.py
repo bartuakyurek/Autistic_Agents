@@ -159,6 +159,10 @@ class Agent:
             needs_dict["socialization"] = social_factor
             needs_dict["financial_security"]  = +5
         
+        elif action == "meltdown": 
+            needs_dict["energy"] = -0.2
+            needs_dict["self_esteem"] = -1 # WARNING: It does not affect anything atm
+
         elif action == "wait":
             pass # No effect
         
@@ -316,6 +320,9 @@ class Agent:
             return
         
         if self._check_burnout(): # Enters recovery if needed
+            if self.burnout_state == "social":
+                effect = self.get_action_effect("meltdown")
+                self.apply_action("meltdown", effect=effect)
             return
        
         chosen_action = self.choose_action(time)

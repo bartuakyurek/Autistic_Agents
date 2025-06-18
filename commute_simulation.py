@@ -12,7 +12,7 @@ with open("config.yaml", "r") as f:
 DAY_LENGTH = config['simulation']['day_length']
 MAX_TICKS = config['simulation']['max_ticks']
 NUM_AGENTS = config['simulation']['num_agents']
-
+BUS_PRICE = 0.005
 
 # For logging
 _TIME = 0 
@@ -33,13 +33,14 @@ def _get_crowd_cost(tolerance, crowd=None):
     
 
 class Agent:
-    def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0"):
+    def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0", income=5):
         self.name = name
         self.home = home
         self.workplace = workplace
 
         self.where = home
         self.wealth = 0
+        self.TIMESTEP_INCOME = income
         self.in_recovery = False # True if in "meltdown"
         self.recovery_timer = 0
 
@@ -277,8 +278,8 @@ class Agent:
             return
        
         chosen_action = self.choose_action(time)
-        effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
         
+        effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
         self.apply_action(chosen_action, effect=effect)
 
         
@@ -288,6 +289,7 @@ class Agent:
             assert len(start) == 2 and len(end) == 2, f"Expected 2D coordinates, got start: {start} and end: {end}."
             return np.abs(start[0] - end[0]) + np.abs(start[1] - end[1])
 
+    """
     def move_to(self, target:str):
         take_walk = False
         if self.where != target:
@@ -323,9 +325,15 @@ class Agent:
             self.apply_action("rest",  self.get_action_effect("rest"))
         else:
             logger.warning(f"Agent can only rest at {self.home}! Currently at {self.where}.")
+    """
 
     def apply_action(self, action, effect):
-        logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')
+        
+        logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}. Current wealth: {self.wealth}')
+        if action == "work":
+            self.wealth += self.TIMESTEP_INCOME
+        elif action == "take_bus":
+            self.wealth -= BUS_PRICE
 
         assert len(effect) == len(self.needs), f"Please provide an array of effects with the same length of needs. Provided effect has length {len(effect)}, expected length {len(self.needs)}."
         for key in self.needs.keys():

@@ -45,7 +45,7 @@ class Agent:
         self.recovery_timer = 0
 
         self.NEED_CATEGORIES = {
-        "energy": {"category": "physical", "max": 10, "timestep_multiplier":0.9},
+        "energy": {"category": "physical", "max": 20, "timestep_multiplier":0.98},
         "alone_time": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # no timestep_multiplier
         "socialization": {"category": "psychological", "max": 10, "timestep_multiplier":1}, # there's no "social" need, but here we lump friendship, family, intimacy
         "financial_security": {"category": "economic", "max": 10, "timestep_multiplier":1},  # no timestep_multiplier
@@ -195,10 +195,10 @@ class Agent:
 
     def get_fixed_policy_actions(self, time, location_str):
         if location_str == "home":
-            if time % DAY_LENGTH < 20:
+            if time % DAY_LENGTH < 10:
                 return {"sleep", "rest"}
             elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
-                return { "rest", "walk", "take_bus"} # Assumption: cannot sleep during work hours
+                return { "walk", "take_bus"} # Assumption: cannot sleep during work hours
             else:
                 return {"sleep", "rest"}
        
@@ -330,14 +330,23 @@ class Agent:
     def apply_action(self, action, effect):
         
         logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}. Current wealth: {self.wealth}')
+
+        # Wealth effects of action
         if action == "work":
+            # assert self.where == self.workplace, f"Expected to work at workplace"
             self.wealth += self.TIMESTEP_INCOME
         elif action == "take_bus":
             self.wealth -= BUS_PRICE
+        
+        # Relocate Agent
+        if action == "take_bus" or action == "walk":
+            self.where = self.workplace if self.where == self.home else self.home # WARNING: Assumes agent can only either at workplace or home
 
         assert len(effect) == len(self.needs), f"Please provide an array of effects with the same length of needs. Provided effect has length {len(effect)}, expected length {len(self.needs)}."
         for key in self.needs.keys():
             self.needs[key] += effect[key]
+        
+        logger.info(f"Current wealth: {self.wealth} and needs: {self.needs}")
 
         # Check for burnout before clamping needs
         if self._check_burnout():

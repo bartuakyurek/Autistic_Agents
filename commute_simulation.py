@@ -44,7 +44,6 @@ class Agent:
         self.in_recovery = False
         self.recovery_timer = 0
 
-        #
         self.NEED_CATEGORIES = {
         "energy": {"category": "physical", "max": 10, "decay":0.9},
         "alone_time": {"category": "psychological", "max": 10, "decay":1}, # no decay
@@ -110,14 +109,22 @@ class Agent:
             needs_dict["wealth"] = -0.01
         
         elif action == "walk":
-            if "length" not in kwargs.keys(): raise KeyError("Please provide walk path length!")
+            if "length" not in kwargs.keys(): 
+                len = random.randint(1, 20) # This should be updated if you want to introduce other locations, e.g. a park to rest or actual bus stops
+                logger.warning(f"No length is provided! Estimated length (RANDOM) {len}.") 
+            else:
+                len = kwargs["length"]
         
-            needs_dict["energy"] = -kwargs["length"] * 0.1
+            needs_dict["energy"] = -len * 0.1
             needs_dict["alone_time"] = +1 
         
         elif action == "rest":
-            needs_dict["energy"] = +3
+            needs_dict["energy"] = +2
             needs_dict["alone_time"] = +1
+
+        elif action == "sleep":
+            needs_dict["energy"] = +5
+            needs_dict["alone_time"] = +5
 
         elif action == "work":
             social_factor =  +1 if random.random() < 0.5 else 0 # Potentially socialize during work
@@ -126,7 +133,7 @@ class Agent:
             needs_dict["alone_time"] = -social_factor
             needs_dict["socialization"] = social_factor
             needs_dict["wealth"]  = +5
-           
+        
         else:
             raise ValueError(f"Unrecognized action: {action}")
         
@@ -167,8 +174,18 @@ class Agent:
         return False
 
     def get_available_actions(self):
-        print("WARNING!! Implement available actions!")
-        return {"rest"}
+        # Valid actions (see get_action_effect()): 
+        # take_bus, walk, rest, sleep, work
+
+        # TODO-workplace policies comes here, i.e. you can only work at certain hours
+        # and possibly you can only go to work 1-2 hours before work shift starts
+        if self.where == self.home:
+            return {"sleep", "walk", "take_bus"}
+        elif self.where == self.workplace:
+             return {"rest", "sleep", "walk", "take_bus", "work"}
+        else:
+            logger.error(f"No actions available at {self.where}")
+            return {}
 
     def compute_urgency(self, need_key):
         max_val = self.NEED_CATEGORIES[need_key]["max"]
@@ -184,7 +201,7 @@ class Agent:
 
         actions = self.get_available_actions()
         for action in actions:
-            estimated_effects = self.get_action_effect(action)
+            estimated_effects = self.get_action_effect(action) # WARNING: it is estimated because the action functions will call it again (so these estimated effects will not be used) 
             score = 0
             for need_key, delta in estimated_effects.items():
                 category = self.NEED_CATEGORIES[need_key]["category"]
@@ -195,6 +212,7 @@ class Agent:
                 best_score = score
                 best_action = action
 
+        logger.info(f"[ACT] Best action chosen: {best_action}")
         return best_action
 
     def deliberate_action(self, time):
@@ -207,7 +225,7 @@ class Agent:
        
         chosen_action = self.choose_action()
         effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
-        self.apply_action(chosen_action, effect=effect)
+        # self.apply_action(chosen_action, effect=effect)
 
         """# POLICY: Fixed schedule -> Shouldn't be here, deliberation is done via needs-satisfaction
         if time % DAY_LENGTH < 20:

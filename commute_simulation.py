@@ -134,6 +134,9 @@ class Agent:
             needs_dict["socialization"] = social_factor
             needs_dict["wealth"]  = +5
         
+        elif action == "wait":
+            pass # No effect
+        
         else:
             raise ValueError(f"Unrecognized action: {action}")
         
@@ -173,16 +176,50 @@ class Agent:
             return True # Recovery completed
         return False
 
-    def get_available_actions(self):
+    def get_fixed_policy_actions(self, time, location_str):
+        if location_str == "home":
+            if time % DAY_LENGTH < 20:
+                return {"sleep", "rest"}
+            elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
+                return {"sleep", "rest", "walk", "take_bus"}
+            else:
+                return {"sleep", "rest"}
+       
+        elif location_str == "work":
+            if time % DAY_LENGTH < 20:
+                return {"walk", "take_bus", "wait"} # Wait until shift starts
+            elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
+                return {"rest",  "work"} # Assumption: going back home not available during fixed work hours
+            else:
+                return {"walk", "take_bus"}
+        else:
+            raise ValueError(f"Unknown location string {location_str}")
+
+    def get_available_actions(self, time):
         # Valid actions (see get_action_effect()): 
         # take_bus, walk, rest, sleep, work
 
         # TODO-workplace policies comes here, i.e. you can only work at certain hours
         # and possibly you can only go to work 1-2 hours before work shift starts
+        policy = config["policy"][self.workplace]
+
+        # Home actions based on policy
         if self.where == self.home:
-            return {"sleep", "walk", "take_bus"}
+            if policy == "fixed":
+                return self.get_fixed_policy_actions(time, "home")
+            else:
+                logger.warning(f"Unknown policy {policy}")
+                return {"sleep", "walk", "take_bus"}
+        
+        # Workplace actions based on policy
         elif self.where == self.workplace:
-             return {"rest", "sleep", "walk", "take_bus", "work"}
+            if policy == "fixed":
+                return self.get_fixed_policy_actions(time, "work")
+            else:
+                logger.warning(f"Unknown policy {policy}")
+                return {"rest", "sleep", "walk", "take_bus", "work"}
+            
+        # Undefined place
         else:
             logger.error(f"No actions available at {self.where}")
             return {}
@@ -194,12 +231,12 @@ class Agent:
         current_val = self.needs[need_key]
         return 1 - current_val / max_val
 
-    def choose_action(self):
+    def choose_action(self, time):
 
         best_score = float('-inf')
         best_action = None
 
-        actions = self.get_available_actions()
+        actions = self.get_available_actions(time)
         for action in actions:
             estimated_effects = self.get_action_effect(action) # WARNING: it is estimated because the action functions will call it again (so these estimated effects will not be used) 
             score = 0
@@ -223,7 +260,7 @@ class Agent:
         if self._check_burnout(): # Enters recovery if needed
             return
        
-        chosen_action = self.choose_action()
+        chosen_action = self.choose_action(time)
         effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
         # self.apply_action(chosen_action, effect=effect)
 

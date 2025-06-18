@@ -3,7 +3,7 @@ simulation:
   grid_size: [30, 30]
   day_length: 240
   max_ticks: 580
-  num_agents: 300
+  num_agents: 30
 
 agent: 
   # Default values
@@ -18,3 +18,9 @@ agent:
 locations:
   home_0: [1, 1]
   workplace_0: [25, 25]
+  # workplace_1: [25, 25]
+
+policy:
+  workplace_0: "fixed"
+  #workplace_1: "flex_2" # trailing number indicates flexible hours
+

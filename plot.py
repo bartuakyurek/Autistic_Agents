@@ -4,6 +4,11 @@ import numpy as np
 import os
 import scipy.stats as st
 
+
+################################################################################################################
+# Wealth distribution with gini plots
+################################################################################################################
+
 def gini_coefficient(values):
     """Compute Gini index of a list of values (e.g., wealth)."""
     array = np.array(values)
@@ -56,3 +61,47 @@ def plot_wealth_distribution(agents, title="No norms", color="gray", save=False)
         plt.show()
 
 
+################################################################################################################
+# Attribute vs. Another attribute plots (e.g. social tolerance vs. wealth)
+################################################################################################################
+
+def save_plot(title):
+    results_dir = os.path.join(os.path.dirname(__file__), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    save_path = os.path.join(results_dir, f"{title}.png")
+    plt.savefig(save_path)
+    print(f"Plot saved to: {save_path}")
+    
+
+def plot_relations(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True):
+    # Gather data for plotting
+    tolerance_groups = {}
+    for agent in agents:
+        tol = x_fn(agent)
+        if tol not in tolerance_groups:
+            tolerance_groups[tol] = []
+        tolerance_groups[tol].append(y_fn(agent))
+
+    # TODO: Confidence interval should be computed for trials of same experimental settings 
+    # I think for social tolerance levels we should just show max/mean/min values
+    # Compute mean and 95% confidence intervals
+    labels = sorted(tolerance_groups.keys())
+    means = [np.mean(tolerance_groups[t]) for t in labels]
+    stds = [np.std(tolerance_groups[t]) for t in labels]
+    cis = [1.96 * std / np.sqrt(len(tolerance_groups[t])) for t, std in zip(labels, stds)]
+
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.errorbar(labels, means, yerr=cis, fmt='o', capsize=5, label="95% CI")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    
+    if save_fig:
+        save_plot(title)
+        plt.close()
+    else:
+        plt.show()

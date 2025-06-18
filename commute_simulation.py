@@ -388,47 +388,6 @@ class Agent:
         print(f"{self.name} final wealth: {self.final_wealth()}")
         # TODO: More attributes to report?
 
-def save_plot(title):
-    results_dir = os.path.join(os.path.dirname(__file__), "results")
-    os.makedirs(results_dir, exist_ok=True)
-    save_path = os.path.join(results_dir, f"{title}.png")
-    plt.savefig(save_path)
-    print(f"Plot saved to: {save_path}")
-    
-
-def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True):
-    # Gather data for plotting
-    tolerance_groups = {}
-    for agent in agents:
-        tol = x_fn(agent)
-        if tol not in tolerance_groups:
-            tolerance_groups[tol] = []
-        tolerance_groups[tol].append(y_fn(agent))
-
-    # TODO: Confidence interval should be computed for trials of same experimental settings 
-    # I think for social tolerance levels we should just show max/mean/min values
-    # Compute mean and 95% confidence intervals
-    labels = sorted(tolerance_groups.keys())
-    means = [np.mean(tolerance_groups[t]) for t in labels]
-    stds = [np.std(tolerance_groups[t]) for t in labels]
-    cis = [1.96 * std / np.sqrt(len(tolerance_groups[t])) for t, std in zip(labels, stds)]
-
-    # Plot
-    plt.figure(figsize=(8, 5))
-    plt.errorbar(labels, means, yerr=cis, fmt='o', capsize=5, label="95% CI")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    
-    if save_fig:
-        save_plot(title)
-        plt.close()
-    else:
-        plt.show()
-
 def get_workplaces(policy):
     workplaces = []
     for wp in config["workplace_locations"]:
@@ -475,9 +434,9 @@ if __name__ == "__main__":
             agent.deliberate_action(t)
             agent.decay_needs_sat() # Water tank model, decay needs
 
-    from plot import plot_wealth_distribution
+    from plot import plot_wealth_distribution, plot_relations
     plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color=get_policy_colors(POLICY), save=True)
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
-    plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")
+    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
+    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
+    plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
+    plot_relations(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")

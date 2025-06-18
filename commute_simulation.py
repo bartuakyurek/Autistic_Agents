@@ -39,7 +39,7 @@ class Agent:
         self.workplace = workplace
 
         self.where = home
-        self.wealth = 0
+        self.wealth = float(0)
         self.TIMESTEP_INCOME = income
         self.in_recovery = False # True if in "meltdown"
         self.burnout_state = None
@@ -427,7 +427,7 @@ def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True
 if __name__ == "__main__":
     # Setup agents
     available_homes = ["home_0"]
-    available_workplaces = ["workplace_1"]
+    available_workplaces = ["workplace_0"]  # TODO: Decouple workplace and their policies to be consistent
     available_tolerances = [i+1 for i in range(7)]
 
     agents = []
@@ -446,8 +446,11 @@ if __name__ == "__main__":
             agent.deliberate_action(t)
             agent.decay_needs_sat() # Water tank model, decay needs
 
-    
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
-    plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")
+    from plot import plot_wealth_distribution
+    plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color="gray", save=False)
+
+
+    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
+    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
+    #plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
+    #plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")

@@ -48,7 +48,7 @@ def plot_wealth_distribution(agents, title="No norms", color="gray", save=False)
     if save:
         results_dir = os.path.join(os.path.dirname(__file__), "results")
         os.makedirs(results_dir, exist_ok=True)
-        fname = title.lower().replace(" ", "_") + ".png"
+        fname = title.lower().replace(" ", "_").replace(":","_") + ".png"
         plt.savefig(os.path.join(results_dir, fname))
         print(f"Saved to {os.path.join(results_dir, fname)}")
         plt.close()

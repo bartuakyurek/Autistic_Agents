@@ -22,9 +22,11 @@ houses:
 workplace_locations:
   workplace_0: [25, 25]
   workplace_1: [25, 25]
+  workplace_2: [25, 25]
 
 policy:
   workplace_0: "fixed"
   workplace_1: "free"
+  workplace_2: "flex" # allow to go to work at anytime
   #workplace_2: "flex_2" # trailing number indicates flexible hours (NOT IMPLEMENTED)
 

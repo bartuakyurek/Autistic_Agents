@@ -227,6 +227,14 @@ class Agent:
             return {"work", "sleep", "rest", "take_bus", "wait", "walk"} # Sleep at work available
         else:
             raise ValueError(f"Unknown location string {location_str}")
+        
+    def get_flex_policy_actions(self, time, location_str):
+        if location_str == "home":
+            return {"sleep", "rest", "walk", "take_bus"} # Go to work anytime
+        elif location_str == "work":
+            return {"rest", "walk", "take_bus", "work", "wait"} # Go to home anytime
+        else:
+            raise ValueError(f"Unknown location string {location_str}")
 
     def get_available_actions(self, time):
         # Valid actions (see get_action_effect()): 
@@ -244,6 +252,9 @@ class Agent:
             elif policy == "free":
                 return self.get_free_policy_actions(time, "home")
             
+            elif policy == "flex":
+                return self.get_flex_policy_actions(time, "home")
+            
             else:  
                 logger.warning(f"Unknown policy {policy}")
                 return {}
@@ -255,6 +266,9 @@ class Agent:
             
             elif policy == "free":
                 return self.get_free_policy_actions(time, "work")
+            
+            elif policy == "flex":
+                return self.get_flex_policy_actions(time, "work")
 
             else:  
                 logger.warning(f"Unknown policy {policy}")
@@ -404,13 +418,15 @@ def get_policy_colors(policy):
         return "gray"
     elif policy == "free":
         return "cyan"
+    elif policy == "flex":
+        return "pink"
     else:
         print(f"WARNING: Undefined color for policy: {policy}")
         return "pink"
 
 if __name__ == "__main__":
     # Setup agents
-    POLICY = "free" # Options: "fixed", "free"
+    POLICY = "flex" # Options: "fixed", "free"
 
     available_homes = [k for k in config["houses"].keys()]
     available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy

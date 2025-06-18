@@ -2,6 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
+import copy 
 
 # Read config.yaml for simulation parameters
 import yaml
@@ -12,33 +13,29 @@ DAY_LENGTH = config['simulation']['day_length']
 MAX_TICKS = config['simulation']['max_ticks']
 NUM_AGENTS = config['simulation']['num_agents']
 
-# Need indices: [Energy, Social, Wealth]
-ENERGY = 0
-SOCIAL_ENERGY = 1
-WEALTH = 2
 
 # For logging
 _TIME = 0 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', level=logging.INFO)
 
-# Action effect matrix (Need-Satisfaction Matrix)
-ACTION_EFFECTS = {
-    "work": [-2, lambda: -1 if random.random() < 0.5 else 0, 5],
-    "rest": [3, 1, 0], # Assumption: Rest improves only energy, not social energy
-    "walk": [lambda length: -length * 0.1, 1, 0], # Assumption: Longer walk needs more energy, and improves social energy
-    "take_bus": [-1, lambda crowd, tolerance: -(float(crowd ** 2)/float(tolerance+1e-12)), 0],  # 1e-12 to avoid division by zero
-}
+
 
 def get_building_coords(building : str):
     # TODO: Right now every agent shares the same house and workplace coordinates
     return config['locations'][building]
     
+def _get_crowd_cost(tolerance, crowd=None):
+    if crowd is None:
+        crowd = int( random.random() * 10 )
+        logger.warning(f"Crowd level not provided. Randomly chosen crowd level: {crowd}")
+
+    return -(float(crowd ** 2)/float(tolerance+1e-12)) # 1e-12 to avoid division by zero
+    
 
 class Agent:
     def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0"):
         self.name = name
-
         self.home = home
         self.workplace = workplace
 
@@ -47,14 +44,78 @@ class Agent:
         self.bus_waiting = False
         self.in_recovery = False
         self.recovery_timer = 0
-        self.needs = [10, 10, 0]  # Initial needs: [Energy, Social, Wealth]
-        self.social_tolerance = social_tolerance
 
+        self.max_energy = 10
+        self.max_social_energy = 10 
+
+        self.initial_needs = self.get_needs_dict(set_zero=False) # Init to max energy
+        self.needs =  copy.deepcopy(self.initial_needs)
+
+        self.social_tolerance = social_tolerance
         self.burnout_state = None
+
+    def get_needs_dict(self, set_zero=True):
+        # This is where needs are defined 
+        # If set_zero is True, then it sets
+        # all needs entries to zero, that is used
+        # to get an empty needs dict for action
+        # effects update
+        needs_levels = {"energy": self.max_energy, 
+                        "alone_time": self.max_social_energy, 
+                        "wealth": 0}
+        
+        if set_zero:
+            for key in needs_levels.keys():
+                needs_levels[key] = 0
+        return needs_levels
+    
+    def _clamp_needs(self):
+        # To prevent needs overshooting max capacity
+        self.needs["energy"] = max(0, min(self.max_energy, self.needs["energy"]))
+        self.needs["alone_time"] = max(0, min(self.max_social_energy, self.needs["alone_time"]))
+
+    def get_action_effect(self, action, **kwargs):
+        # Need-Satisfaction Matrix
+        # with amendments:
+        # - entries in range [-inf, +inf] instead of [0,1]
+        # - actions can have random effects instead of fixed scalars
+
+        # Default effects
+        needs_dict = self.get_needs_dict(set_zero=True)
+
+        # Update costs based on action
+        if action == "take_bus":
+            crowd = kwargs["crowd"] if "crowd" in kwargs.keys() else None
+            # 
+            needs_dict["alone_time"] = _get_crowd_cost(tolerance=self.social_tolerance, crowd=crowd)
+            needs_dict["energy"] = -1
+            needs_dict["wealth"] = -0.01
+        
+        elif action == "walk":
+            if "length" not in kwargs.keys(): raise KeyError("Please provide walk path length!")
+        
+            needs_dict["energy"] = -kwargs["length"] * 0.1
+            needs_dict["alone_time"] = +1 
+        
+        elif action == "rest":
+            needs_dict["energy"] = +3
+            needs_dict["alone_time"] = +1
+
+        elif action == "work":
+            social_cost =  -1 if random.random() < 0.5 else 0 # Randomly decrease social energy
+
+            needs_dict["energy"] = -2
+            needs_dict["alone_time"] = social_cost
+            needs_dict["wealth"]  = +5
+           
+        else:
+            raise ValueError(f"Unrecognized action: {action}")
+        
+        return needs_dict
 
     def _check_burnout(self):
         # If low social energy, enter recovery
-        if self.needs[SOCIAL_ENERGY] <= 0:
+        if self.needs["alone_time"] <= 0:
             self.in_recovery = True
             self.recovery_timer = 5
 
@@ -62,7 +123,7 @@ class Agent:
             self.burnout_state = "social"
             return True
         
-        if self.needs[ENERGY] < 0: # Currently it is the same as social burnout
+        if self.needs["energy"] < 0: # Currently it is the same as social burnout
             self.in_recovery = True
             self.recovery_timer = 5
 
@@ -74,9 +135,9 @@ class Agent:
 
     def _recover_burnout_step(self):
         if self.burnout_state == "social":
-            self.needs[SOCIAL_ENERGY] += 0.1 * (self.social_tolerance + 0.1) # +epsilon to avoid multiply by zero, 0.1 results in linear increase in wealth outcome, larger values make them almost equal, this is tuned to make the impact of social tolerance higher
+            self.needs["alone_time"] += 0.1 * (self.social_tolerance + 0.1) # +epsilon to avoid multiply by zero, 0.1 results in linear increase in wealth outcome, larger values make them almost equal, this is tuned to make the impact of social tolerance higher
         elif self.burnout_state == "energy":
-            self.needs[ENERGY] += 10 # Larger values make energy burnout easier to recover
+            self.needs["energy"] += 10 # Larger values make energy burnout easier to recover
         else:
             raise ValueError(f"Unrecognized burnout state: {self.burnout_state}")
 
@@ -118,8 +179,8 @@ class Agent:
             if random.random() < 0.5:
                 crowd = random.randint(0, 3)
                 if crowd <= self.social_tolerance:
-                    delta = ACTION_EFFECTS["take_bus"]
-                    self.apply_action("take_bus", [delta[0], delta[1](crowd, self.social_tolerance), delta[2]]) # TODO: Better way to do it?
+                    delta = self.get_action_effect("take_bus", crowd=crowd)
+                    self.apply_action("take_bus", delta) # TODO: Better way to do it?
                     self.where = target
                 else:
                     take_walk = True
@@ -127,24 +188,23 @@ class Agent:
                 take_walk = True
             
             if take_walk:
-                delta = ACTION_EFFECTS["walk"]
                 start_coord = get_building_coords(self.where)
                 end_coord  =  get_building_coords(target)
-                delta = [delta[0](self._get_distance(start_coord, end_coord)), delta[1], delta[2]] # TODO: Better way to do it?
+                delta = self.get_action_effect("walk", length=self._get_distance(start_coord, end_coord))
 
                 self.apply_action("walk", delta)
                 self.where = target
 
     def do_work(self):
         if self.where == self.workplace:
-            delta = ACTION_EFFECTS["work"]
-            self.apply_action("work", [delta[0], delta[1](), delta[2]])
+            delta =  self.get_action_effect("work")
+            self.apply_action("work", delta)
         else:
             logger.warning(f"Agent can only work at {self.workplace}! Currently at {self.where}.")
        
     def rest(self):
         if self.where == self.home:
-            self.apply_action("rest", ACTION_EFFECTS["rest"])
+            self.apply_action("rest",  self.get_action_effect("rest"))
         else:
             logger.warning(f"Agent can only rest at {self.home}! Currently at {self.where}.")
 
@@ -152,19 +212,17 @@ class Agent:
         logger.info(f'[{_TIME}] Agent {self.name} takes action: {action} with effects {effect}.')
 
         assert len(effect) == len(self.needs), f"Please provide an array of effects with the same length of needs. Provided effect has length {len(effect)}, expected length {len(self.needs)}."
-        for i in range(len(effect)):
-            self.needs[i] += effect[i]
+        for key in self.needs.keys():
+            self.needs[key] += effect[key]
 
-        # Check for burnout
+        # Check for burnout before clamping needs
         if self._check_burnout():
             return
 
-        # Clamp needs
-        self.needs[ENERGY] = max(0, min(10, self.needs[ENERGY]))
-        self.needs[SOCIAL_ENERGY] = max(0, min(10, self.needs[SOCIAL_ENERGY]))
+        self._clamp_needs()
 
     def final_wealth(self):
-        return self.needs[WEALTH]
+        return self.needs["wealth"]
     
     def report(self):
         print(f"{self.name} final wealth: {self.final_wealth()}")

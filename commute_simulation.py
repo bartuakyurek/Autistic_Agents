@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', level=logging.INFO)
 
 
-
 def get_building_coords(building : str):
     # TODO: Right now every agent shares the same house and workplace coordinates
     return config['locations'][building]
@@ -32,6 +31,7 @@ def _get_crowd_cost(tolerance, crowd=None):
 
     return -(float(crowd ** 2)/float(tolerance+1e-12)) # 1e-12 to avoid division by zero
     
+
 
 class Agent:
     def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0"):
@@ -45,8 +45,20 @@ class Agent:
         self.in_recovery = False
         self.recovery_timer = 0
 
-        self.max_energy = 10
-        self.max_social_energy = 10 
+        #
+        self.NEED_CATEGORIES = {
+        "energy": {"category": "physical", "max": 10, "decay":0.9},
+        "alone_time": {"category": "psychological", "max": 10, "decay":1}, # no decay
+        "socialization": {"category": "psychological", "max": 10, "decay":1}, # there's no "social" need, but here we lump friendship, family, intimacy
+        "wealth": {"category": "economic", "max": None, "decay":1},  # no max cap, no decay
+        "self_esteem": {"category": "psychological", "max": 10, "decay":1}, # normally it belongs to "esteem" category, not social  
+        }
+
+        self.CATEGORY_IMPORTANCE = { # Equally important atm
+            "physical": 1.0,
+            "psychological": 1.0,
+            "economic": 1.0
+        }
 
         self.initial_needs = self.get_needs_dict(set_zero=False) # Init to max energy
         self.needs =  copy.deepcopy(self.initial_needs)
@@ -60,19 +72,26 @@ class Agent:
         # all needs entries to zero, that is used
         # to get an empty needs dict for action
         # effects update
-        needs_levels = {"energy": self.max_energy, 
-                        "alone_time": self.max_social_energy, 
-                        "wealth": 0}
-        
-        if set_zero:
-            for key in needs_levels.keys():
-                needs_levels[key] = 0
-        return needs_levels
+        need_sat_levels = {}
+        for key, item in self.NEED_CATEGORIES.items():
+            if set_zero:
+                need_sat_levels[key] = 0
+            else:
+                need_cap = item["max"]
+                if need_cap is None:
+                    need_sat_levels[key] = 0 # Assume: Need start at 0 if no max. cap, that is currently "wealth" need
+                else:
+                    need_sat_levels[key] = need_cap
+        return need_sat_levels
     
     def _clamp_needs(self):
         # To prevent needs overshooting max capacity
-        self.needs["energy"] = max(0, min(self.max_energy, self.needs["energy"]))
-        self.needs["alone_time"] = max(0, min(self.max_social_energy, self.needs["alone_time"]))
+        # In future work these maximum caps could be improved via training,
+        # e.g. agent can choose to invest in some special training to improve
+        # their social tolerance.
+        for key, item in self.NEED_CATEGORIES.items():
+            if item["max"] is not None:
+                self.needs[key] = max(0, min(item["max"], self.needs[key]))
 
     def get_action_effect(self, action, **kwargs):
         # Need-Satisfaction Matrix
@@ -86,7 +105,7 @@ class Agent:
         # Update costs based on action
         if action == "take_bus":
             crowd = kwargs["crowd"] if "crowd" in kwargs.keys() else None
-            # 
+            
             needs_dict["alone_time"] = _get_crowd_cost(tolerance=self.social_tolerance, crowd=crowd)
             needs_dict["energy"] = -1
             needs_dict["wealth"] = -0.01
@@ -102,10 +121,11 @@ class Agent:
             needs_dict["alone_time"] = +1
 
         elif action == "work":
-            social_cost =  -1 if random.random() < 0.5 else 0 # Randomly decrease social energy
+            social_factor =  +1 if random.random() < 0.5 else 0 # Potentially socialize during work
 
             needs_dict["energy"] = -2
-            needs_dict["alone_time"] = social_cost
+            needs_dict["alone_time"] = -social_factor
+            needs_dict["socialization"] = social_factor
             needs_dict["wealth"]  = +5
            
         else:

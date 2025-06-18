@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import copy 
+import os
 
 # Read config.yaml for simulation parameters
 import yaml
@@ -367,7 +368,15 @@ class Agent:
         print(f"{self.name} final wealth: {self.final_wealth()}")
         # TODO: More attributes to report?
 
-def plot_stats(agents, x_fn, y_fn):
+def save_plot(title):
+    results_dir = os.path.join(os.path.dirname(__file__), "results")
+    os.makedirs(results_dir, exist_ok=True)
+    save_path = os.path.join(results_dir, f"{title}.png")
+    plt.savefig(save_path)
+    print(f"Plot saved to: {save_path}")
+    
+
+def plot_stats(agents, x_fn, y_fn, xlabel="", ylabel="", title="", save_fig=True):
     # Gather data for plotting
     tolerance_groups = {}
     for agent in agents:
@@ -387,14 +396,18 @@ def plot_stats(agents, x_fn, y_fn):
     # Plot
     plt.figure(figsize=(8, 5))
     plt.errorbar(labels, means, yerr=cis, fmt='o', capsize=5, label="95% CI")
-    plt.xlabel("Social Tolerance")
-    plt.ylabel("Final Wealth")
-    plt.title("Final Wealth by Social Tolerance with 95% Confidence Interval")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.show()
-
+    
+    if save_fig:
+        save_plot(title)
+        plt.close()
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     # Setup agents
@@ -407,4 +420,8 @@ if __name__ == "__main__":
             agent.deliberate_action(t)
             agent.decay_needs_sat() # Water tank model, decay needs
 
-    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth())
+    
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate")
+    plot_stats(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate")
+    plot_stats(agents, lambda a: a.social_burnout_sum, lambda a: a.final_wealth(),  xlabel="social-burnout", ylabel="wealth",  title="Social Burnout Rate vs. Wealth")

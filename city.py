@@ -1,3 +1,22 @@
+"""
+
+A basic interface to declare a 2D city map and request path lengths
+given a starting and a target point coordinate on the map. This map
+is a binary map where 0 indicates a movable tile, and 1 indicates 
+an obstacle. 
+
+MAPF benchmarks https://movingai.com/benchmarks/mapf/index.html
+are supported in the initialization of the city grid. 
+
+WARNING: .map files in MAPF benchmarks are assumed to consist of only
+@ and . characters where @ is an obstacle and . is a free cell.
+
+
+@author: bartu
+@date: Spring 2025
+"""
+
+
 import numpy as np
 import heapq
 
@@ -19,7 +38,7 @@ class City:
         """
         if grid is None:
             grid = self.grid
-            
+
         coords = np.argwhere(grid == free_value)
         return [tuple(coord) for coord in coords]  
 

@@ -1,3 +1,23 @@
+"""
+
+Simulation script for needs-based model given in Aguilera et al. It runs the 
+simulation and saves the resulting plots under /results/<policy_name> where
+available policy names are: fixed, free, and flexible.
+
+This project aims to simulate commute-related challenges of Autistic people
+and tries to mitigate the effects of these challenges on wealth distribution
+by employing alternative workplace policies.
+
+
+WARNING: needs-based model implemented here have important amendments 
+that affect the simulation outcome in the end. Please see the report
+for detailed description.
+
+@author: bartu
+@date: Spring 2025
+"""
+
+
 import random
 import matplotlib.pyplot as plt
 import logging

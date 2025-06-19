@@ -1,3 +1,15 @@
+"""
+
+Agent declaration for needs-based model given in Aguilera et al.
+
+WARNING: needs-based model implemented here have important amendments 
+that affect the simulation outcome in the end. Please see the report
+for detailed description.
+
+@author: bartu
+@date: Spring 2025
+"""
+
 
 import copy 
 import yaml

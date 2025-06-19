@@ -4,7 +4,3 @@ scrape.py
 /project-env
 simulation.log
 /__pycache__
-/results
-/results/fixed
-/results/free
-*.png

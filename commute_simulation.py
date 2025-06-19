@@ -23,15 +23,23 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename='simulation.log', encoding='utf-8', filemode='w', level=logging.INFO)
 
 
-def get_building_coords(building : str):
+def get_building_coords(building : str, return_tuple=True):
     # TODO: UNUSED - Walking currently takes random effects, it should be scaled with distance in the upcoming commits
     if building[:4] == "home":
-        return config['houses'][building]
+        coord = config['houses'][building]
+        
     elif building[:4] == "work":
-        return config['workplace_locations'][building]
+        coord = config['workplace_locations'][building]
+        
     else:
+        coord = None
         raise ValueError(f"Unknown building name: {building}. Please make sure this building is either declared in .yaml or implemented correctly in if-else above")
     
+    if return_tuple:
+        return (coord[0], coord[1])
+    else:
+        return np.array(coord)
+
 def _get_crowd_cost(tolerance, crowd=None):
     if crowd is None:
         crowd = int( random.random() * 10 )
@@ -40,11 +48,19 @@ def _get_crowd_cost(tolerance, crowd=None):
     return -(float(crowd ** 2)/float(tolerance+1e-12)) # 1e-12 to avoid division by zero
     
 class Agent:
-    def __init__(self, name, social_tolerance, home="home_0", workplace="workplace_0", income=5):
+    def __init__(self, 
+                 name : str, 
+                 social_tolerance : float,
+                 city : City, 
+                 home : str ="home_0", 
+                 workplace : str ="workplace_0", 
+                 income : float = 5.0):
+        
         self.name = name
+        self.city = city
         self.home = home
         self.workplace = workplace
-
+       
         self.where = home
         self.wealth = float(0)
         self.TIMESTEP_INCOME = income
@@ -131,6 +147,7 @@ class Agent:
                 len =  random.randint(1, 20) # This should be updated if you want to introduce other locations, e.g. a park to rest or actual bus stops
                 logger.warning(f"No length is provided! Estimated length (RANDOM) {len}.") 
             else:
+                # print("Length got: ", kwargs["length"])
                 len = kwargs["length"]
         
             needs_dict["energy"] = -len * 0.1 / 4
@@ -210,37 +227,38 @@ class Agent:
     def get_fixed_policy_actions(self, time, location_str):
         if location_str == "home":
             if time % DAY_LENGTH < 10:
-                return {"sleep", "rest"}
+                return ["sleep", "rest"]
             elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
-                return { "walk", "take_bus"} # Assumption: cannot sleep during work hours
+                return [ "walk", "take_bus"] # Assumption: cannot sleep during work hours
             else:
-                return {"sleep", "rest"}
+                return ["sleep", "rest"]
        
         elif location_str == "work":
             if time % DAY_LENGTH < 20:
-                return {"walk", "take_bus", "wait"} # Wait until shift starts
+                return ["walk", "take_bus", "wait"] # Wait until shift starts
             elif time % DAY_LENGTH < 60: # TODO: how to define fixed and flexible work hours?
-                return {"rest",  "work"} # Assumption: going back home not available during fixed work hours
+                return ["rest",  "work"] # Assumption: going back home not available during fixed work hours
             else:
-                return {"walk", "take_bus"}
+                return ["walk", "take_bus"]
         else:
             raise ValueError(f"Unknown location string {location_str}")
         
     def get_free_policy_actions(self, time, location_str):
         if location_str == "home":
-            return {"work", "sleep", "rest", "take_bus", "wait", "walk"} # Work from home available
+            return ["work", "sleep", "rest", "take_bus", "wait", "walk"] # Work from home available
         elif location_str == "work":
-            return {"work", "sleep", "rest", "take_bus", "wait", "walk"} # Sleep at work available
+            return ["work", "sleep", "rest", "take_bus", "wait", "walk"] # Sleep at work available
         else:
             raise ValueError(f"Unknown location string {location_str}")
         
     def get_flex_policy_actions(self, time, location_str):
         if location_str == "home":
-            return {"sleep", "rest", "walk", "take_bus"} # Go to work anytime
+            return ["sleep", "rest", "walk", "take_bus"] # Go to work anytime
         elif location_str == "work":
-            return {"rest", "walk", "take_bus", "work", "wait"} # Go to home anytime
+            return ["rest", "walk", "take_bus", "work", "wait"] # Go to home anytime
         else:
             raise ValueError(f"Unknown location string {location_str}")
+
 
     def get_available_actions(self, time):
         # Valid actions (see get_action_effect()): 
@@ -263,7 +281,7 @@ class Agent:
             
             else:  
                 logger.warning(f"Unknown policy {policy}")
-                return {}
+                return []
         
         # Workplace actions based on policy
         elif self.where == self.workplace:
@@ -278,12 +296,39 @@ class Agent:
 
             else:  
                 logger.warning(f"Unknown policy {policy}")
-                return {}  
+                return []  
             
         # Undefined place
         else:
             logger.error(f"No actions available at {self.where}")
-            return {}
+            return []
+    
+    #def get_available_actions(self, time, estimate):
+    #    action_names = self._helper_available_actions(time)
+    #    actions = []
+    #    for name in action_names:
+    #        kwargs = {}
+    #        # TODO: Specify kwargs here? 
+    #        actions.append((name, kwargs))
+    #    return actions
+
+    def get_action_kwargs(self, action, estimate):
+        kwargs = {}
+
+        if action == "walk":
+            home_coord = get_building_coords(self.home)
+            work_coord = get_building_coords(self.workplace)
+            
+            if estimate:
+                cost = self.city.get_estimated_path_cost(home_coord, work_coord) # WARNING: Assumes walk is only between work and home
+            else:
+                cost = self.city.get_shortest_path_length(home_coord, work_coord)
+            kwargs["length"] = cost
+
+        if action == "take_bus":
+            pass # TODO: Crowd level can be estimated / observed here
+
+        return kwargs
 
     def compute_urgency(self, need_key):
         max_val = self.NEED_CATEGORIES[need_key]["max"]
@@ -299,7 +344,8 @@ class Agent:
 
         actions = self.get_available_actions(time)
         for action in actions:
-            estimated_effects = self.get_action_effect(action) # WARNING: it is estimated because the action functions will call it again (so these estimated effects will not be used) 
+            kwargs = self.get_action_kwargs(action, estimate=True)                
+            estimated_effects = self.get_action_effect(action, **kwargs) # WARNING: it is estimated because the action functions will call it again (so these estimated effects will not be used) 
             score = 0
             for need_key, delta in estimated_effects.items():
                 category = self.NEED_CATEGORIES[need_key]["category"]
@@ -328,8 +374,8 @@ class Agent:
             return
        
         chosen_action = self.choose_action(time)
-        
-        effect = self.get_action_effect(chosen_action) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
+        kwargs = self.get_action_kwargs(chosen_action, estimate=False)        
+        effect = self.get_action_effect(chosen_action, **kwargs) # WARNING: choose_action() also calls this as estimated_effects, here we call it again because actions may have random effects
         self.apply_action(chosen_action, effect=effect)
 
         
@@ -442,32 +488,47 @@ def prepare_results_path(policy):
     os.makedirs(policy_results_dir, exist_ok=True)
     return policy_results_dir
 
-def setup_agents():
+def setup_agents(city):
     
     available_homes = [k for k in config["houses"].keys()]
     available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
     available_tolerances = [i+1 for i in range(7)]
     print("Available workplaces: ", available_workplaces)
     print("Available houses: ", available_homes)
+    #available_cells = city.get_free_cell_coords()
     
     agents = []
     for i in range(NUM_AGENTS):
         a = Agent(name="A"+str(i), 
-                    home=random.choice(available_homes),
-                    workplace=random.choice(available_workplaces),
-                    social_tolerance=random.choice(available_tolerances)
+                  city=city,
+                  home=random.choice(available_homes),
+                  workplace=random.choice(available_workplaces),
+                  social_tolerance=random.choice(available_tolerances)
                 ) 
         agents.append(a)
     return agents
 
+def load_simulation_map(assetspath='assets', mapname = 'maze-128-128-10.map'):
+    from io_handler import get_binary_map
+
+    mapfile_path = os.path.join(os.path.dirname(__file__), assetspath, mapname)
+    binary_grid = get_binary_map = get_binary_map(mapfile_path=mapfile_path)
+    print("Map loaded\n:", binary_grid)
+
+    city = City(map_array=binary_grid)
+    return city
 
 if __name__ == "__main__":
-    
-    #POLICY = "free" # Options: "fixed", "free", "flex"
-    policies = ["fixed", "free", "flex"]
+    import os 
+    import random
+
+    from plot import plot_wealth_distribution, plot_relations
+
+    city = load_simulation_map()
+    policies = ["fixed"]#, "free", "flex"] # Options: "fixed", "free", "flex"
     for POLICY in policies:
         print("Chosen policy: ", POLICY)
-        agents = setup_agents()
+        agents = setup_agents(city)
 
         # Simulate
         for t in range(MAX_TICKS):
@@ -476,7 +537,6 @@ if __name__ == "__main__":
                 agent.deliberate_action(t)
                 agent.decay_needs_sat() # Water tank model, decay needs
 
-        from plot import plot_wealth_distribution, plot_relations
         res_path = prepare_results_path(POLICY)
         plot_wealth_distribution(agents, title=f"Policy: {POLICY}", color=get_policy_colors(POLICY), save=True, results_dir=res_path)
         plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth", results_dir=res_path)

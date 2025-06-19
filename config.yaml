@@ -1,6 +1,6 @@
 
 simulation:
-  grid_size: [50, 50]
+  grid_size: [50, 50] # WARNING: UNUSED 
   day_length: 240
   max_ticks: 2400
   num_agents: 100

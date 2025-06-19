@@ -1,9 +1,9 @@
 
 simulation:
-  grid_size: [30, 30]
+  grid_size: [50, 50]
   day_length: 240
-  max_ticks: 580
-  num_agents: 30
+  max_ticks: 2400
+  num_agents: 100
 
 agent: 
   # Default values
@@ -20,9 +20,9 @@ houses:
   home_0: [1, 1]
 
 workplace_locations:
-  workplace_0: [36, 36] # TODO: pick from map
-  workplace_1: [36, 36]
-  workplace_2: [36, 36]
+  workplace_0: [25, 25] # TODO: pick from map
+  workplace_1: [25, 25]
+  workplace_2: [25, 25]
 
 policy:
   workplace_0: "fixed"

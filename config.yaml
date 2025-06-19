@@ -18,15 +18,39 @@ agent:
   
 houses:
   home_0: [1, 1]
+  #home_1: [5, 5]
+  #home_2: [20, 20]
+  #home_3: [30,30]
 
 workplace_locations:
   workplace_0: [25, 25] # TODO: pick from map
   workplace_1: [25, 25]
   workplace_2: [25, 25]
 
+  #workplace_00: [36,36]
+  #workplace_01: [50,36]
+  #workplace_02: [36,50]
+
+  #workplace_10: [36,36]
+  #workplace_11: [50,36]
+  #workplace_12: [36,50]
+
+  #workplace_20: [36,36]
+  #workplace_21: [50,36]
+  #workplace_22: [36,50]
+
 policy:
   workplace_0: "fixed"
-  workplace_1: "free"
-  workplace_2: "flex" # allow to go to work at anytime
-  #workplace_2: "flex_2" # trailing number indicates flexible hours (NOT IMPLEMENTED)
+  #workplace_00: "fixed"
+  #workplace_01: "fixed"
+  #workplace_02: "fixed"
 
+  workplace_1: "free" # allow work at home
+  #workplace_10: "free"
+  #workplace_11: "free"
+  #workplace_12: "free"
+
+  workplace_2: "flex" # allow to go to work at anytime
+  #workplace_20: "flex" 
+  #workplace_21: "flex" 
+  #workplace_22: "flex" 

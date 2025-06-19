@@ -525,7 +525,7 @@ if __name__ == "__main__":
 
     from plot import plot_wealth_distribution, plot_relations
 
-    RANDOMIZE_WALK = False # Randomly choose walk costs
+    RANDOMIZE_WALK = True # Randomly choose walk costs
     if RANDOMIZE_WALK: 
         city = None
     else:

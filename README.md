@@ -29,6 +29,8 @@ options:
 
 In default setting, if an agent chooses to "walk", manhattan distance is given to estimate, and the A* shortest path is given to the agent to actualize the action. If the option ``-rw`` is enabled, agent estimates and walks random path lengths. See also ``config.yaml`` to specify available house and workplace coordinates in the simulation. Simulation script assigns random house and workplaces to the agents from the available options provided in the configuration file.
 
+Note that the simulation results are sensitive to needs-satisfaction parameters. See ``get_action_effect( )`` in ``agent.py`` to manually change these parameters for your desire. 
+
 ## References
 [1] A. Aguilera, N. Montes, G. Curto, C. Sierra, and N. Osman, “Can poverty be reduced by acting on discrimination? an agent-based model for policy making,” in Proceedings of the 23rd International Conference on Autonomous Agents and Multiagent Systems, ser. AAMAS’24. Richland, SC: International Foundation for Autonomous Agents and Multiagent Systems, 2024, p. 22–30
 

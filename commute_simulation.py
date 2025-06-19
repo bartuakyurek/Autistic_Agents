@@ -17,14 +17,14 @@ for detailed description.
 @date: Spring 2025
 """
 
-
-import random
-import matplotlib.pyplot as plt
-import logging
 import os
-
+import random
+import logging
+import argparse
+    
 from city import City
 from agent import Agent
+from plot import plot_wealth_distribution, plot_relations
 
 # Read config.yaml for simulation parameters
 import yaml
@@ -104,22 +104,26 @@ def load_simulation_map(assetspath='assets', mapname = 'maze-128-128-10.map'):
     return city
 
             
-    
 if __name__ == "__main__":
-    import os 
-    import random
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-rw", "--randomize-walk", help="Allow agents to walk in randomize path lengths instead of the shortest path.", action="store_true", default=False)
+    parser.add_argument("-p", "--policy", help="Choose workplace policy (available options: 'fixed', 'free', 'flex'). If None, run simulations for all available policies. Default: None", type=str, default=None)
+    args = parser.parse_args()
 
-    from plot import plot_wealth_distribution, plot_relations
-
-    RANDOMIZE_WALK = True # Randomly choose walk costs
-    if RANDOMIZE_WALK: 
+    if args.randomize_walk: 
+        print("No city provided for randomized walk setting.")
         city = None
     else:
+        print("Loading city map...")
         city = load_simulation_map()
 
-    policies = ["fixed", "free", "flex"] #  Options: ["fixed", "free", "flex"] 
+    if args.policy is None: policies = ["fixed", "free", "flex"] 
+    else: policies = [args.policy]
+    print("Simulation will run for policies: ", policies)
+
     for POLICY in policies:
-        print("Chosen policy: ", POLICY)
+        print("Current policy: ", POLICY)
         agents = setup_agents(city)
 
         # Simulate

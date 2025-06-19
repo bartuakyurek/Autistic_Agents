@@ -146,6 +146,7 @@ class Agent:
             if "length" not in kwargs.keys(): 
                 len =  random.randint(1, 20) # This should be updated if you want to introduce other locations, e.g. a park to rest or actual bus stops
                 logger.warning(f"No length is provided! Estimated length (RANDOM) {len}.") 
+                
             else:
                 # print("Length got: ", kwargs["length"])
                 len = kwargs["length"]
@@ -315,7 +316,7 @@ class Agent:
     def get_action_kwargs(self, action, estimate):
         kwargs = {}
 
-        if action == "walk":
+        if action == "walk" and self.city is not None: # If no city provided, walk will be randomized
             home_coord = get_building_coords(self.home)
             work_coord = get_building_coords(self.workplace)
             
@@ -524,8 +525,13 @@ if __name__ == "__main__":
 
     from plot import plot_wealth_distribution, plot_relations
 
-    city = load_simulation_map()
-    policies = ["fixed"]#, "free", "flex"] # Options: "fixed", "free", "flex"
+    RANDOMIZE_WALK = False # Randomly choose walk costs
+    if RANDOMIZE_WALK: 
+        city = None
+    else:
+        city = load_simulation_map()
+
+    policies = ["fixed", "free", "flex"] #  Options: ["fixed", "free", "flex"] 
     for POLICY in policies:
         print("Chosen policy: ", POLICY)
         agents = setup_agents(city)

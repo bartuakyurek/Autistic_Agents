@@ -1,4 +1,6 @@
-# 580_Project_Src
+# CENG 580  Multi Agent Systems 
+## Spring 2025
+## Term Project
 
 This project aims to simulate commute-related challenges of Autistic people and tries to mitigate the effects of these challenges on wealth distribution by employing alternative workplace policies. Inspired by Aguilera et al. [1], this project is based on "Needs-Based Model" originally introduced by Dignum et al. [2]. 
 

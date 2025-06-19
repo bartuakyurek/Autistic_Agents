@@ -13,10 +13,13 @@ class City:
             self.height = height
             self.grid = np.zeros((width, height))  # 0: free, 1: obstacle
 
-    def get_free_cell_coords(self, grid, free_value=0):
+    def get_free_cell_coords(self, grid=None, free_value=0):
         """
         Returns a list of (row, col) coordinates where the grid value equals `free_value`.
         """
+        if grid is None:
+            grid = self.grid
+            
         coords = np.argwhere(grid == free_value)
         return [tuple(coord) for coord in coords]  
 

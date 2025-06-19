@@ -5,6 +5,8 @@ import logging
 import copy 
 import os
 
+from city import City
+
 # Read config.yaml for simulation parameters
 import yaml
 with open("config.yaml", "r") as f:
@@ -440,27 +442,32 @@ def prepare_results_path(policy):
     os.makedirs(policy_results_dir, exist_ok=True)
     return policy_results_dir
 
-if __name__ == "__main__":
-    # Setup agents
-    policies = ["fixed", "free", "flex"]
-        
-    for POLICY in policies:
-        #POLICY = "free" # Options: "fixed", "free", "flex"
+def setup_agents():
+    
+    available_homes = [k for k in config["houses"].keys()]
+    available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
+    available_tolerances = [i+1 for i in range(7)]
+    print("Available workplaces: ", available_workplaces)
+    print("Available houses: ", available_homes)
+    
+    agents = []
+    for i in range(NUM_AGENTS):
+        a = Agent(name="A"+str(i), 
+                    home=random.choice(available_homes),
+                    workplace=random.choice(available_workplaces),
+                    social_tolerance=random.choice(available_tolerances)
+                ) 
+        agents.append(a)
+    return agents
 
-        available_homes = [k for k in config["houses"].keys()]
-        available_workplaces = get_workplaces(policy=POLICY)  # For the experiments only get the workplaces with the same policy
-        available_tolerances = [i+1 for i in range(7)]
+
+if __name__ == "__main__":
+    
+    #POLICY = "free" # Options: "fixed", "free", "flex"
+    policies = ["fixed", "free", "flex"]
+    for POLICY in policies:
         print("Chosen policy: ", POLICY)
-        print("Available workplaces: ", available_workplaces)
-        print("Available houses: ", available_homes)
-        agents = []
-        for i in range(NUM_AGENTS):
-            a = Agent(name="A"+str(i), 
-                        home=random.choice(available_homes),
-                        workplace=random.choice(available_workplaces),
-                        social_tolerance=random.choice(available_tolerances)
-                    ) 
-            agents.append(a)
+        agents = setup_agents()
 
         # Simulate
         for t in range(MAX_TICKS):
@@ -471,7 +478,7 @@ if __name__ == "__main__":
 
         from plot import plot_wealth_distribution, plot_relations
         res_path = prepare_results_path(POLICY)
-        plot_wealth_distribution(agents, title=f"Policy: {config["policy"][available_workplaces[0]]}", color=get_policy_colors(POLICY), save=True, results_dir=res_path)
+        plot_wealth_distribution(agents, title=f"Policy: {POLICY}", color=get_policy_colors(POLICY), save=True, results_dir=res_path)
         plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.final_wealth(), xlabel="tolerance", ylabel="wealth", title="Social Tolerance vs. Wealth", results_dir=res_path)
         plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.social_burnout_sum,  xlabel="tolerance", ylabel="social-burnout", title="Social Tolerance vs. Social Burnout Rate", results_dir=res_path)
         plot_relations(agents, lambda a: a.social_tolerance, lambda a: a.energy_burnout_sum,  xlabel="tolerance", ylabel="energy-burnout",  title="Social Tolerance vs. Energy Burnout Rate", results_dir=res_path)

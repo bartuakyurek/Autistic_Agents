@@ -4,3 +4,4 @@ scrape.py
 /project-env
 simulation.log
 /__pycache__
+/results
